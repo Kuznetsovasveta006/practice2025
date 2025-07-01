@@ -64,6 +64,21 @@ class Graph:
         return Graph(adjacency)
 
 
+    @staticmethod
+    def random_graph(n: int, p: float) -> 'Graph':
+        """
+        Генерирует случайный список смежности размера n
+        с вероятностью p для каждого ребра i - j.
+        """
+        adj = [set() for _ in range(n)]
+        for i in range(n):
+            for j in range(i + 1, n):
+                if random.random() < p:
+                    adj[i].add(j)
+                    adj[j].add(i)
+        return Graph(adj)
+
+
     def transform_by_degree(self):
         """
         Преобразует граф, переупорядочивая вершины по убыванию степени
