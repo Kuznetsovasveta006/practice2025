@@ -1,4 +1,4 @@
-﻿from core.Genetic import GeneticAlgorithm
+﻿from core.genetic import GeneticAlgorithm
 from modules.parameters import Parameters
 from modules.graph import Graph
 
