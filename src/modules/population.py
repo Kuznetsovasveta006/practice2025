@@ -1,4 +1,4 @@
-from individual import Individual
+from src.modules.individual import Individual
 
 class Population:
     def __init__(self, individuals: list[Individual]):
@@ -7,6 +7,9 @@ class Population:
         self.avg_fitness: float = 0.0       # Средняя приспособленность
         self.update_stats()                 # Инициализация параметров
 
+    def get_len(self):
+        """Подсчет количества особоей в популяции"""
+        return len(self.individuals)
 
     def update_stats(self):
         """Пересчитывает статистики популяции"""
