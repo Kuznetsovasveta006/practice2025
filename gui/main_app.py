@@ -49,10 +49,10 @@ class MainApp(tk.Tk):
         self.left_panel = tk.Frame(self.main_frame)
         self.left_panel.pack(side=tk.LEFT, fill=tk.Y)
         self.entries = {}
-        
+
         # Создаем поля параметров
         create_parameter_fields(self.left_panel, self.entries, self.mark_parameters_changed)
-        
+
         # Создаем кнопки параметров
         self._create_parameter_buttons()
 
@@ -240,7 +240,7 @@ class MainApp(tk.Tk):
 
     def _validate_and_get_parameters(self):
         """Валидирует параметры и возвращает их"""
-        params, error = validate_parameters(self.entries)
+        params, error = Validator.validate_parameters(self.entries)
         if error:
             show_error("Ошибка", error)
             return None
@@ -270,7 +270,7 @@ class MainApp(tk.Tk):
     def _update_solution_list(self, solutions, best_index):
         """Обновляет список решений в UI"""
         self.solution_list.listbox.delete(0, tk.END)
-        formatted_solutions = format_solution_list(solutions, self.solution_list.winfo_screenwidth())
+        formatted_solutions = Formatter.format_solution_list(solutions, self.solution_list.winfo_screenwidth())
         for solution in formatted_solutions:
             self.solution_list.listbox.insert(tk.END, solution)
 

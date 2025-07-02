@@ -83,6 +83,16 @@ PARAM_FIELDS = [
     ("Reduction step", "reduce_cuts_step"),
 ]
 
+class Formatter:
+    @staticmethod
+    def format_solution_list(solutions, widget_width):
+        """Форматирование списка решений для отображения"""
+        pad = ' ' * max(2, int(widget_width * 0.03 // 8))
+        formatted_solutions = []
+        for i, sol in enumerate(solutions, 1):
+            s = ''.join(str(x) for x in sol)
+            formatted_solutions.append(f"{pad}{i}. {s}{pad}")
+        return formatted_solutions
 
 class Validator:
     """Класс для валидации данных"""
@@ -102,6 +112,27 @@ class Validator:
             show_error("Ошибка", "Нет графа для сохранения!")
             return False
         return True
+
+    @staticmethod
+    def validate_parameters(entries_dict):
+        """Валидация параметров из полей ввода"""
+        params = {}
+        for key, entry in entries_dict.items():
+            value = entry.get().strip()
+            if not value:
+                return None, f"Поле не может быть пустым"
+
+            # Преобразуем значения в соответствующие типы
+            if key in ["population_size", "max_generations", "max_cut_points", "decr_m_prob_step", "reduce_cuts_step"]:
+                params[key] = int(value)
+            elif key in ["mutation_rate", "gene_mutation"]:
+                params[key] = float(value)
+            elif key == "fitness_scale":
+                params[key] = int(value)
+            else:
+                params[key] = value
+
+        return params, None
 
     @staticmethod
     def validate_matrix_size(size, max_size=15):
@@ -126,6 +157,29 @@ class Validator:
             return None
 
 
+    @staticmethod
+    def validate_matrix(matrix):
+        """Валидация матрицы смежности"""
+        size = len(matrix)
+
+        # Проверяем, что матрица квадратная
+        for row in matrix:
+            if len(row) != size:
+                return False, "Матрица должна быть квадратной"
+
+        # Проверяем, что матрица симметричная
+        for i in range(size):
+            for j in range(size):
+                if matrix[i][j] != matrix[j][i]:
+                    return False, "Матрица смежности должна быть симметричной"
+
+        # Проверяем, что на диагонали нули
+        for i in range(size):
+            if matrix[i][i] != 0:
+                return False, "На диагонали матрицы должны быть нули"
+
+        return True, "OK"
+
 class FileManager:
     """Класс для работы с файлами"""
 
@@ -144,6 +198,36 @@ class FileManager:
         """Получение имени файла для открытия"""
         return filedialog.askopenfilename(title=title, filetypes=filetypes)
 
+    def parse_matrix_from_file(filename):
+        """Парсинг матрицы из файла"""
+        try:
+            with open(filename, 'r') as f:
+                lines = f.readlines()
+
+            # Удаляем пустые строки и лишние пробелы
+            lines = [line.strip() for line in lines if line.strip()]
+
+            if not lines:
+                return None, "Файл пустой или содержит только пустые строки"
+
+            # Парсим матрицу
+            matrix = []
+            for line in lines:
+                row = [int(x) for x in line.split()]
+                matrix.append(row)
+
+            # Валидируем матрицу
+            is_valid, message = Validator.validate_matrix(matrix)
+            if not is_valid:
+                return None, message
+
+            return matrix, f"Матрица смежности загружена из файла: {filename}\nРазмер графа: {len(matrix)}x{len(matrix)}"
+
+        except ValueError:
+            return None, "Файл содержит некорректные данные. Используйте только числа, разделенные пробелами"
+        except Exception as e:
+            return None, f"Не удалось загрузить файл: {e}"
+
     @staticmethod
     def save_matrix_to_file(filename, matrix):
         """Сохранение матрицы в файл"""
@@ -160,7 +244,7 @@ class FileManager:
     @staticmethod
     def load_matrix_from_file(filename):
         """Загрузка матрицы из файла"""
-        matrix, message = parse_matrix_from_file(filename)
+        matrix, message = FileManager.parse_matrix_from_file(filename)
         if matrix is not None:
             return np.array(matrix), message
         else:
@@ -315,60 +399,6 @@ def create_label(parent, **kwargs):
     return tk.Label(parent, **kwargs)
 
 
-def validate_matrix(matrix):
-    """Валидация матрицы смежности"""
-    size = len(matrix)
-    
-    # Проверяем, что матрица квадратная
-    for row in matrix:
-        if len(row) != size:
-            return False, "Матрица должна быть квадратной"
-    
-    # Проверяем, что матрица симметричная
-    for i in range(size):
-        for j in range(size):
-            if matrix[i][j] != matrix[j][i]:
-                return False, "Матрица смежности должна быть симметричной"
-    
-    # Проверяем, что на диагонали нули
-    for i in range(size):
-        if matrix[i][i] != 0:
-            return False, "На диагонали матрицы должны быть нули"
-    
-    return True, "OK"
-
-
-def parse_matrix_from_file(filename):
-    """Парсинг матрицы из файла"""
-    try:
-        with open(filename, 'r') as f:
-            lines = f.readlines()
-
-        # Удаляем пустые строки и лишние пробелы
-        lines = [line.strip() for line in lines if line.strip()]
-
-        if not lines:
-            return None, "Файл пустой или содержит только пустые строки"
-
-        # Парсим матрицу
-        matrix = []
-        for line in lines:
-            row = [int(x) for x in line.split()]
-            matrix.append(row)
-
-        # Валидируем матрицу
-        is_valid, message = validate_matrix(matrix)
-        if not is_valid:
-            return None, message
-
-        return matrix, f"Матрица смежности загружена из файла: {filename}\nРазмер графа: {len(matrix)}x{len(matrix)}"
-
-    except ValueError:
-        return None, "Файл содержит некорректные данные. Используйте только числа, разделенные пробелами"
-    except Exception as e:
-        return None, f"Не удалось загрузить файл: {e}"
-
-
 def create_parameter_fields(parent, entries_dict, callback=None):
     """Создание полей параметров"""
     for i, (label, key) in enumerate(PARAM_FIELDS):
@@ -388,27 +418,6 @@ def set_default_values(entries_dict):
             entries_dict[key].insert(0, value)
 
 
-def validate_parameters(entries_dict):
-    """Валидация параметров из полей ввода"""
-    params = {}
-    for key, entry in entries_dict.items():
-        value = entry.get().strip()
-        if not value:
-            return None, f"Поле не может быть пустым"
-
-        # Преобразуем значения в соответствующие типы
-        if key in ["population_size", "max_generations", "max_cut_points", "decr_m_prob_step", "reduce_cuts_step"]:
-            params[key] = int(value)
-        elif key in ["mutation_rate", "gene_mutation"]:
-            params[key] = float(value)
-        elif key == "fitness_scale":
-            params[key] = int(value)
-        else:
-            params[key] = value
-
-    return params, None
-
-
 def generate_random_solutions(population_size, matrix_size):
     """Генерация случайных решений для алгоритма"""
     solutions = []
@@ -422,31 +431,22 @@ def generate_random_solutions(population_size, matrix_size):
     return solutions
 
 
-def format_solution_list(solutions, widget_width):
-    """Форматирование списка решений для отображения"""
-    pad = ' ' * max(2, int(widget_width * 0.03 // 8))
-    formatted_solutions = []
-    for i, sol in enumerate(solutions, 1):
-        s = ''.join(str(x) for x in sol)
-        formatted_solutions.append(f"{pad}{i}. {s}{pad}")
-    return formatted_solutions
 
-
-def create_control_panel(parent, play_img, step_img, save_img, attach_img, 
+def create_control_panel(parent, play_img, step_img, save_img, attach_img,
                         play_cmd, step_cmd, save_cmd, load_cmd):
     """Создание панели управления"""
     control_frame = create_frame(parent, bg=Colors.GRAPH_BG)
     control_frame.pack(side=tk.BOTTOM, fill=tk.X, pady=5)
-    
+
     # Кнопки воспроизведения
     play_btn = create_button(control_frame, image=play_img, command=play_cmd, **Styles.CONTROL_BTN_STYLE)
     play_btn.pack(side=tk.LEFT, padx=5)
     step_btn = create_button(control_frame, image=step_img, command=step_cmd, **Styles.CONTROL_BTN_STYLE)
     step_btn.pack(side=tk.LEFT, padx=5)
-    
+
     # Spacer для центрирования
     create_label(control_frame, bg=Colors.GRAPH_BG).pack(side=tk.LEFT, expand=True)
-    
+
     # Информационная панель
     info_frame = create_frame(control_frame, bg=Colors.GRAPH_BG)
     info_frame.pack(side=tk.LEFT)
@@ -454,9 +454,9 @@ def create_control_panel(parent, play_img, step_img, save_img, attach_img,
     generation_label.pack(side=tk.TOP)
     best_clique_label = create_label(info_frame, text="Max Clique: -", width=18, anchor="center", bg=Colors.GRAPH_BG)
     best_clique_label.pack(side=tk.TOP)
-    
+
     create_label(control_frame, bg=Colors.GRAPH_BG).pack(side=tk.LEFT, expand=True)
-    
+
     # Правые кнопки
     right_btns = create_frame(control_frame, bg=Colors.GRAPH_BG)
     right_btns.pack(side=tk.RIGHT)
@@ -464,5 +464,5 @@ def create_control_panel(parent, play_img, step_img, save_img, attach_img,
     load_btn.pack(side=tk.LEFT, padx=5)
     save_btn = create_button(right_btns, image=save_img, command=save_cmd, **Styles.CONTROL_BTN_STYLE)
     save_btn.pack(side=tk.LEFT, padx=5)
-    
-    return control_frame, generation_label, best_clique_label 
+
+    return control_frame, generation_label, best_clique_label

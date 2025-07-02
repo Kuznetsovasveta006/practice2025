@@ -15,50 +15,35 @@ class ZoomableWidget:
         self.canvas.get_tk_widget().bind('<Button-5>', lambda e: self._on_zoom_linux(e, -1))
 
     def _zoom_to_cursor(self, event, scale_factor):
-        """Зум к курсору мыши"""
+        """Масштабирование с привязкой к позиции курсора"""
+        # Получаем координаты курсора в системе координат данных
         if self.zoom_type == "fitness":
-            # Оригинальная логика для fitness графика
             y_widget = event.widget.winfo_height()
             y_inverted = y_widget - event.y
-            inv = self.ax.transData.inverted()
-            xdata, ydata = inv.transform((event.x, y_inverted))
-            xlim = self.ax.get_xlim()
-            ylim = self.ax.get_ylim()
-            new_width = (xlim[1] - xlim[0]) * scale_factor
-            new_height = (ylim[1] - ylim[0]) * scale_factor
-            relx = (xdata - xlim[0]) / (xlim[1] - xlim[0])
-            rely = (ydata - ylim[0]) / (ylim[1] - ylim[0])
-            new_x0 = xdata - relx * new_width
-            new_x1 = new_x0 + new_width
-            new_y0 = ydata - rely * new_height
-            new_y1 = new_y0 + new_height
-            if new_x0 < 0:
-                new_x0 = 0
-                new_x1 = new_width
-            if new_y0 < 0:
-                new_y0 = 0
-                new_y1 = new_height
-            self.ax.set_xlim([new_x0, new_x1])
-            self.ax.set_ylim([new_y0, new_y1])
+            x, y = event.x, y_inverted
         else:
-            # Оригинальная логика для графа
-            x, y = event.x, event.y
-            y_widget = event.widget.winfo_height()
-            y_inverted = y_widget - y
-            inv = self.ax.transData.inverted()
-            xdata, ydata = inv.transform((x, y_inverted))
-            xlim = self.ax.get_xlim()
-            ylim = self.ax.get_ylim()
-            new_width = (xlim[1] - xlim[0]) * scale_factor
-            new_height = (ylim[1] - ylim[0]) * scale_factor
-            relx = (xdata - xlim[0]) / (xlim[1] - xlim[0])
-            rely = (ydata - ylim[0]) / (ylim[1] - ylim[0])
-            new_x0 = xdata - relx * new_width
-            new_x1 = new_x0 + new_width
-            new_y0 = ydata - rely * new_height
-            new_y1 = new_y0 + new_height
-            self.ax.set_xlim([new_x0, new_x1])
-            self.ax.set_ylim([new_y0, new_y1])
+            x, y = event.x, event.widget.winfo_height() - event.y
+
+        inv = self.ax.transData.inverted()
+        xdata, ydata = inv.transform((x, y))
+
+        # Вычисляем новые границы
+        xlim, ylim = self.ax.get_xlim(), self.ax.get_ylim()
+        new_width = (xlim[1] - xlim[0]) * scale_factor
+        new_height = (ylim[1] - ylim[0]) * scale_factor
+
+        # Вычисляем относительное положение курсора
+        relx = (xdata - xlim[0]) / (xlim[1] - xlim[0])
+        rely = (ydata - ylim[0]) / (ylim[1] - ylim[0])
+
+        # Устанавливаем новые границы с проверкой для fitness
+        new_x0 = max(xdata - relx * new_width, 0) if self.zoom_type == "fitness" else xdata - relx * new_width
+        new_x1 = new_x0 + new_width
+        new_y0 = max(ydata - rely * new_height, 0) if self.zoom_type == "fitness" else ydata - rely * new_height
+        new_y1 = new_y0 + new_height
+
+        self.ax.set_xlim([new_x0, new_x1])
+        self.ax.set_ylim([new_y0, new_y1])
         self.canvas.draw()
 
     def _on_zoom(self, event):
