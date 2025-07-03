@@ -1,7 +1,10 @@
-from right_widgets import *
-from matrix_window import *
-from left_panel import LeftPanel
-from graph_visualizer import GraphVisualizer
+from logging import Manager
+from core.manager import AlgorithmManager
+from gui.right_widgets import *
+from gui.matrix_window import *
+from gui.left_panel import LeftPanel
+from gui.graph_visualizer import GraphVisualizer
+from modules.graph import Graph
 import networkx as nx
 
 
@@ -12,6 +15,7 @@ class MainApp(tk.Tk):
         self._initialize_state()
         self.create_widgets()
         self._bind_events()
+        self.manager = AlgorithmManager()
 
     def _initialize_window(self):
         """Инициализация окна приложения"""
@@ -26,6 +30,8 @@ class MainApp(tk.Tk):
         self.graph_layout = None
         self.generation_counter = 0
         self.parameters_changed = False
+        self.is_parameters_set = False
+        self.is_graph_set = False
 
     def _bind_events(self):
         """Привязка событий к окну"""
@@ -88,12 +94,18 @@ class MainApp(tk.Tk):
 
     def _load_icons(self):
         """Загрузка иконок для кнопок"""
-        self.play_img = tk.PhotoImage(file="./icons/play.png")
-        self.step_img = tk.PhotoImage(file="./icons/step.png")
-        self.save_img = tk.PhotoImage(file="./icons/save.png")
-        self.attach_img = tk.PhotoImage(file="./icons/attach_file.png")
-        self.end_img = tk.PhotoImage(file="./icons/end.png")
-        self.reset_img = tk.PhotoImage(file="./icons/reset.png")
+        self.play_img = tk.PhotoImage(file="./gui/icons/play.png")
+        self.step_img = tk.PhotoImage(file="./gui/icons/step.png")
+        self.save_img = tk.PhotoImage(file="./gui/icons/save.png")
+        self.attach_img = tk.PhotoImage(file="./gui/icons/attach_file.png")
+        self.end_img = tk.PhotoImage(file="./gui/icons/end.png")
+
+    # def _create_control_panel(self):
+    #     """Создание панели управления"""
+    #     _, self.generation_label, self.best_clique_label = create_control_panel(
+    #         self.graph_frame, self.play_img, self.step_img, self.save_img, self.attach_img,
+    #         self.run_algorithm, self.step_algorithm, self.save_graph, self.load_adjacency_matrix
+    #     )
 
     def _create_control_panel(self):
         """Создает панель управления с кнопками операций и информационными метками"""
@@ -120,7 +132,6 @@ class MainApp(tk.Tk):
                                            **Styles.CONTROL_BTN_STYLE)
         end_btn.pack(side=tk.LEFT, padx=5)
         reset_btn = UIManager.create_button(control_frame,
-                                            image=self.reset_img,
                                           command=self.step_algorithm,
                                           **Styles.CONTROL_BTN_STYLE)
         reset_btn.pack(side=tk.LEFT, padx=5)
@@ -197,17 +208,23 @@ class MainApp(tk.Tk):
         self.adj_matrix = adj_matrix
 
     def get_adj_matrix(self):
-        print(self.ndarray_to_list(self.adj_matrix))
+        return self.ndarray_to_list(self.adj_matrix)
 
     def ndarray_to_list(self, matrix_ndarray):
         """Преобразует np.ndarray в двумерный список целых чисел."""
         return matrix_ndarray.tolist()
 
     def update_graph(self, adj_matrix):
-        self.get_adj_matrix()
-        self.graph = nx.from_numpy_array(self.adj_matrix)
+        #self.get_adj_matrix()
+        self.graph = nx.from_numpy_array(adj_matrix)
         self.graph_layout = nx.spring_layout(self.graph, seed=42)
         self.graph_visualizer.update_graph(self.graph, self.graph_layout)
+
+        # Передаем граф в менеджер алгоритма
+        graph_obj = Graph.from_adj_matrix(adj_matrix)
+        self.manager.set_graph(graph_obj)
+        self.is_graph_set = True
+
         self.graph_visualizer.save_limits()
         self._reset_algorithm_state()
 
@@ -224,10 +241,11 @@ class MainApp(tk.Tk):
         self.generation_counter = 0
         self.generation_label.config(text="Generations: 0")
 
-    def _update_ui_after_algorithm(self):
+    def _update_ui_after_algorithm(self, n):
         """Обновляет UI после выполнения алгоритма"""
-        self.best_clique_label.config(text=f"Max Clique: {1000}")
-        self.generation_counter += 1
+        clique_size = sum(self.current_clique)
+        self.best_clique_label.config(text=f"Max Clique: {clique_size}")
+        self.generation_counter += n
         self.generation_label.config(text=f"Generations: {self.generation_counter}")
 
     def _reset_generation_counter(self):
@@ -238,30 +256,85 @@ class MainApp(tk.Tk):
     def reset_graph_zoom(self):
         self.graph_visualizer.reset_zoom()
 
-    def run_algorithm(self):
-        """Основной метод запуска алгоритма"""
+    def run(self, n):
+        """bla bla"""
         if not self._validate_graph_exists():
             return
 
+        # Если параметры были изменены вовремя выполнения
+        # то алгоритм сбрасывается
         if self.left_panel.has_parameters_changed():
             self._reset_generation_counter()
             self.left_panel.reset_parameters_changed_flag()
+            if self.is_graph_set and self.is_parameters_set:
+                self.manager.reset_algorithm()
+            
+        try:
+            # Формируем параметры для алгоритма
+            if not self.is_parameters_set:
+                params = self.left_panel.validate_and_get_parameters()
+                algorithm_params = {
+                    'population_size': params['population_size'],
+                    'max_generations': params['max_generations'],
+                    'stagnation_limit': params['stagnation_limit'],
+                    'max_mutation_prob_gene': params['max_mutation_prob_gene'],
+                    'max_mutation_prob_chrom': params['max_mutation_prob_chrom'],
+                    'fitness_scaling_percent': params['fitness_scaling_percent'],
+                    'max_crossover_points': params['max_crossover_points'],
+                    'decrease_percent': params['decrease_percent'],
+                    'decrease_step': params['decrease_step']
+                }
+                self.manager.load_and_validate_parameters(algorithm_params)
+                self.is_parameters_set = True
+            
+            if not self.is_graph_set:
+                adj_list = self.ndarray_to_list(self.adj_matrix)
+                graph = Graph.from_adj_matrix(self.adj_matrix)
+                self.manager.set_graph(graph)
+                self.is_graph_set = True
 
-        params = self.left_panel.validate_and_get_parameters()
-        if params is None:
-            return
+            if n == 1:
+                result = self.manager.step()
+            else:
+                result = self.manager.step_n(n)
+                
+            if result is None or len(result) != 2:
+                raise RuntimeError("Unexpected result from algorithm")
 
-        self.fitness_widget.update_fitness_plot(params)
-        population = RandomGenerator.generate_random_solutions(params["population_size"], len(self.adj_matrix))
-        best_solution = self.solution_list.get_and_process_solutions(population)
+            best_solution, population = result
 
-        self.current_clique = best_solution
-        self.draw_graph_with_clique()
-        self._update_ui_after_algorithm()
+            # Обновляем интерфейс
+            self.current_clique = best_solution
+            self.draw_graph_with_clique()
+
+            # Обновляем список решений
+            self.solution_list.update_solution_list(
+                solutions=population,
+                best_index=0  # best_solution всегда первый в списке
+            )
+
+            # Обновляем график фитнеса
+            best=self.manager.history.best_fitness
+            avg=self.manager.history.avg_fitness
+            self.fitness_widget.update_fitness_plot(best, avg)
+
+            # Обновляем статус
+            self.current_clique = best_solution
+            self.draw_graph_with_clique()
+            self._update_ui_after_algorithm(n)
+
+        except Exception as e:
+            UIManager.show_error("Ошибка алгоритма", f"{str(e)}")
+
+
+    def run_algorithm(self):
+        """Основной метод запуска алгоритма"""
+        self.run(1)
 
     def step_algorithm(self):
-        """Пошаговое выполнение алгоритма (заглушка)"""
-        UIManager.show_info("Step", "Step (заглушка)")
+        """Алгоритм на 5 шагов вперед"""
+        self.run(5)
+
 
     def _validate_graph_exists(self):
         """Проверяет, создан ли граф"""
