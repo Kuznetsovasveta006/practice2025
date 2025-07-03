@@ -197,7 +197,11 @@ class GeneticAlgorithm:
             
             # Добавляем лучшего кандидата
             if best_candidates:
-                candidate = random.choice(best_candidates)
+                fitnesses = [ind.fitness for ind in best_candidates]
+                scaled_weights = self.scale_weights(fitnesses)
+                candidate = random.choices(best_candidates, 
+                                           weights=scaled_weights, 
+                                           k=1)[0]
                 remaining.remove(candidate)
                 selected.append(candidate)
             else:
