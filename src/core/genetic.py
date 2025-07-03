@@ -167,9 +167,14 @@ class GeneticAlgorithm:
         selected = []                   # Выбранные особи
         remaining = combined.copy()     # Оставшиеся особи
         
-        # Всегда добавляем лучшую особь
+        # Всегда добавляем лучшую особь (случайную из лучших, если их несколько)
         if remaining:
-            best = remaining.pop(0)
+            max_fitness = remaining[0].fitness
+            best_candidates = [ind for ind in remaining if ind.fitness == max_fitness]
+        
+            # Случайно выбираем одну из лучших
+            best = random.choice(best_candidates)
+            remaining.remove(best)
             selected.append(best)
         
         # Добавляем особи, максимально отличающиеся от уже выбранных
