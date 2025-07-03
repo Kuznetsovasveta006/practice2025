@@ -1,4 +1,4 @@
-﻿import random
+import random
 from modules.graph import Graph
 from modules.parameters import Parameters
 from modules.individual import Individual
@@ -33,6 +33,26 @@ class GeneticAlgorithm:
         self._update_best_solution()    # Обновление лучшего решения
 
 
+    def scale_weights(self, weights: List[float]) -> List[float]:
+        """
+        Масштабирует веса так, чтобы максимальный вес был не более
+        чем на scaling_percent больше минимального.
+        """
+        if not weights:
+            return []
+            
+        w_min = min(weights)
+        w_max = max(weights)
+        
+        # Если все веса равны, возвращаем единицы
+        if w_min == w_max:
+            return [1.0] * len(weights)
+        
+        # Вычисляем масштабированные веса
+        K = self.params.fitness_scaling_percent / 100.0
+        return [1 + K * (w - w_min) / (w_max - w_min) for w in weights]
+
+
     def generate_chromosome(self) -> List[int]:
         """Генерирует хромосому, представляющую клику в графе"""
         # Если граф пустой то хромосома тоже пуста
@@ -41,7 +61,7 @@ class GeneticAlgorithm:
         
         degrees = [len(adj) for adj in self.graph.transformed_adj] # Степени вершин в отсортированном графе
         available = list(range(self.n))                            # Список номеров доступных вершин для добавления в клику
-        weights = degrees                                          # Веса вершин для случайного выбора
+        weights = self.scale_weights(degrees)                      # Веса вершин для случайного выбора
         chosen = random.choices(available, weights=weights)[0]     # Случайно выбираем первую вершину для клики
         current_clique = [chosen]                                  # Теперь текущая клика состоит из этой ершины
         candidates = set(self.graph.transformed_adj[chosen])       # Множество кандидатов для добавления в клику
@@ -49,7 +69,7 @@ class GeneticAlgorithm:
         # Расширяем клику, пока есть кандидаты
         while candidates:
             cand_list = list(candidates)                            
-            cand_weights = [degrees[c] for c in cand_list]                      # Список весов для случайного выбора среди кандидатов
+            cand_weights = self.scale_weights([degrees[c] for c in cand_list])  # Список весов для случайного выбора среди кандидатов
             next_vertex = random.choices(cand_list, weights=cand_weights)[0]    # Случайно выбираем следующщую вершину
             current_clique.append(next_vertex)                                  # Добавляем ее в клику
             candidates.discard(next_vertex)                                     # Удаляем ее из кандидатов
@@ -69,23 +89,9 @@ class GeneticAlgorithm:
 
     def select_parents(self) -> List[Individual]:
         """Выбирает родителей для скрещивания с использованием метода рулетки"""
+        # Масштабируем рулетку
         fitnesses = self.population.get_fitnesses()
-        
-        # Если популяция пуста, возвращаем пустой список
-        if not fitnesses:
-            return []
-
-        f_min = min(fitnesses)
-        f_max = max(fitnesses)
-
-        # Если приспособленности равны, то маштабировать ничего не надо
-        if f_min == f_max:
-            scaled = [1.0] * len(self.population.individuals)
-        # В обратном случае маштабируем, чтобы сектора рулетки отличались 
-        # не более, чем на заданный пользователем процент
-        else:
-            K = self.params.fitness_scaling_percent / 100.0                                      # коэффициент максимального различия
-            scaled = [1 + K * (f - f_min) / (f_max - f_min) for f in fitnesses]    # масштабируем сектора рулетки
+        scaled = self.scale_weights(fitnesses)
             
         # Возвращаем список родителей для новой популяции
         return random.choices(self.population.individuals, 
@@ -147,22 +153,6 @@ class GeneticAlgorithm:
         return self.graph.repair_chromosome(mutated)
     
 
-    def select_new_population_simple (self, current_pop: List[Individual], new_pop: List[Individual]) -> List[Individual]:
-        combined = current_pop + new_pop
-        combined.sort(key=lambda ind: ind.fitness, reverse=True)
-        new_pop, seen = [], set()
-        
-        for ind in combined:
-            geno = tuple(ind.chromosome)
-            if geno not in seen:
-                new_pop.append(ind)
-                seen.add(geno)
-            if len(new_pop) == self.params.population_size:
-                break
-                
-        return new_pop
-    
-
     def _hamming_distance(self, chrom1, chrom2):
         """Вычисляет нормализованное расстояние Хэмминга между двумя хромосомами"""
         matches = sum(g1 == g2 for g1, g2 in zip(chrom1, chrom2))
@@ -171,7 +161,7 @@ class GeneticAlgorithm:
 
     def select_new_population(self, current_pop: List[Individual], offspring: List[Individual]) -> List[Individual]:
         """Формирует новую популяцию, сохраняя разнообразие"""
-        combined = current_pop + offspring
+        combined = offspring + current_pop
         combined.sort(key=lambda ind: ind.fitness, reverse=True)
         
         selected = []                   # Выбранные особи
@@ -184,7 +174,7 @@ class GeneticAlgorithm:
         
         # Добавляем особи, максимально отличающиеся от уже выбранных
         while len(selected) < self.params.population_size and remaining:
-            candidate = None
+            best_candidates = []
             max_min_distance = -1
             
             for ind in remaining:
@@ -196,10 +186,13 @@ class GeneticAlgorithm:
                 
                 if min_distance > max_min_distance:
                     max_min_distance = min_distance
-                    candidate = ind
+                    best_candidates = [ind]
+                elif min_distance == max_min_distance:
+                    best_candidates.append(ind)
             
             # Добавляем лучшего кандидата
-            if candidate:
+            if best_candidates:
+                candidate = random.choice(best_candidates)
                 remaining.remove(candidate)
                 selected.append(candidate)
             else:
@@ -229,16 +222,14 @@ class GeneticAlgorithm:
         self.current_crossover_points = max(1, self.current_crossover_points - reduction_amount)
         
         # Уменьшаем вероятность мутации хромосомы
-        self.current_mutation_prob_chrom = max(
-            0.0, 
-            self.current_mutation_prob_chrom - self.params.max_mutation_prob_chrom * self.params.decrease_percent / 100.0
-        )
+        new_mutation_prob_chrom = self.current_mutation_prob_chrom - self.params.max_mutation_prob_chrom * self.params.decrease_percent / 100.0
+        if new_mutation_prob_chrom > 0.0:
+            self.current_mutation_prob_chrom = new_mutation_prob_chrom
         
         # Уменьшаем вероятность мутации гена
-        self.current_mutation_prob_gene = max(
-            0.0, 
-            self.current_mutation_prob_gene  - self.params.max_mutation_prob_gene * self.params.decrease_percent / 100.0
-        )
+        new_mutation_prob_gene = self.current_mutation_prob_gene  - self.params.max_mutation_prob_gene * self.params.decrease_percent / 100.0
+        if new_mutation_prob_gene > 0.0:
+            self.current_mutation_prob_gene = new_mutation_prob_gene
         
 
     def should_stop(self) -> bool:
@@ -289,15 +280,13 @@ class GeneticAlgorithm:
 
 
     def get_population_chromosomes(self) -> List[List[int]]:
-        """Возвращает хромосомы текущей популяции"""
-        return [ind.chromosome for ind in self.population.individuals]
+        """Возвращает хромосомы текущей популяции""" 
+        return [self.graph.transform_to_original(ind.chromosome) 
+                for ind in self.population.individuals]
 
 
     def get_best_solution(self) -> Tuple[int, List[int]]:
         """Возвращает лучшее решение в исходной нумерации вершин"""
         if self.best_chromosome is None:
-            return 0, []
-        return (
-            self.best_fitness,
-            self.graph.transform_to_original(self.best_chromosome)
-        )
+            return []
+        return self.graph.transform_to_original(self.best_chromosome)
