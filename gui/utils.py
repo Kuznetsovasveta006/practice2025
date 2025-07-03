@@ -2,7 +2,6 @@
 import tkinter as tk
 from tkinter import messagebox, filedialog
 import numpy as np
-import networkx as nx
 import random
 
 
@@ -111,12 +110,10 @@ class Validator:
                 return None, f"Поле не может быть пустым"
 
             # Преобразуем значения в соответствующие типы
-            if key in ["population_size", "max_generations", "max_cut_points", "decr_m_prob_step", "reduce_cuts_step"]:
+            if key in ["population_size", "max_generations", "max_crossover_points", "decrease_percent", "decrease_step", "stagnation_limit", "fitness_scaling_percent"]:
                 params[key] = int(value)
-            elif key in ["mutation_rate", "gene_mutation"]:
+            elif key in ["max_mutation_prob_gene", "max_mutation_prob_chrom"]:
                 params[key] = float(value)
-            elif key == "fitness_scale":
-                params[key] = int(value)
             else:
                 params[key] = value
 
@@ -172,8 +169,8 @@ class FileManager:
     """Класс для работы с файлами"""
 
     @staticmethod
-    def get_save_filename(title="Сохранить как...", defaultextension=".json",
-                          filetypes=[("JSON files", "*.json"), ("All files", "*.*")]):
+    def get_save_filename(title="Сохранить как...", defaultextension=".txt",
+                          filetypes=[("Text files", "*.txt"), ("All files", "*.*")]):
         """Получение имени файла для сохранения"""
         return filedialog.asksaveasfilename(
             title=title,
@@ -182,7 +179,7 @@ class FileManager:
         )
 
     @staticmethod
-    def get_open_filename(title="Выберите файл", defaultextension=".json", filetypes=[("JSON files", "*.json"), ("All files", "*.*")]):
+    def get_open_filename(title="Выберите файл", filetypes=[("All files", "*.*")]):
         """Получение имени файла для открытия"""
         return filedialog.askopenfilename(title=title, filetypes=filetypes)
 
@@ -382,7 +379,5 @@ class RandomGenerator:
                 sol[idx] = 1
             solutions.append(sol)
         return solutions
-
-
 
 
