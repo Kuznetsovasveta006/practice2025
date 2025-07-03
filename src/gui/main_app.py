@@ -238,6 +238,7 @@ class MainApp(tk.Tk):
 
     def update_graph(self, adj_matrix):
         #self.get_adj_matrix()
+        self.adj_matrix = adj_matrix
         self.graph = nx.from_numpy_array(adj_matrix)
         self.graph_layout = nx.spring_layout(self.graph, seed=42)
         self.graph_visualizer.update_graph(self.graph, self.graph_layout)
@@ -402,6 +403,11 @@ class MainApp(tk.Tk):
         """Проверка наличия графа для сохранения"""
         return Validator.validate_graph_for_save(self.adj_matrix)
 
+    def load_graph(self):
+        """Загрузка графа из файла (заглушка)"""
+        filename = self._get_open_filename("Выберите файл для загрузки")
+        if filename:
+            UIManager.show_info("Файл выбран", f"Выбран файл: {filename}")
 
     def _load_matrix_from_file(self, filename):
         """Загрузка матрицы из файла"""
@@ -422,7 +428,12 @@ class MainApp(tk.Tk):
         filename = self._get_open_filename("Выберите файл с матрицей смежности",
                                            filetypes=[("Text files", "*.txt"), ("All files", "*.*")])
         if filename:
-            self._load_matrix_from_file(filename)
+            # Используем менеджер для загрузки
+            try:
+                self.manager.load_graph_from_matrix(filename)
+                self._load_matrix_from_file(filename)
+            except Exception as e:
+                UIManager.show_error("Ошибка", f"Ошибка загрузки: {str(e)}")
 
 
     def save_graph(self):
@@ -432,4 +443,9 @@ class MainApp(tk.Tk):
 
         filename = self._get_save_filename()
         if filename:
-            self._save_matrix_to_file(filename)
+            # Используем менеджер для сохранения
+            try:
+                self.manager.save_graph_as_matrix(filename)
+                UIManager.show_info("Сохранено", f"Граф сохранён в файл: {filename}")
+            except Exception as e:
+                UIManager.show_error("Ошибка", f"Ошибка сохранения: {str(e)}")
