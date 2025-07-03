@@ -93,13 +93,7 @@ class MainApp(tk.Tk):
         self.save_img = tk.PhotoImage(file="./icons/save.png")
         self.attach_img = tk.PhotoImage(file="./icons/attach_file.png")
         self.end_img = tk.PhotoImage(file="./icons/end.png")
-
-    # def _create_control_panel(self):
-    #     """Создание панели управления"""
-    #     _, self.generation_label, self.best_clique_label = create_control_panel(
-    #         self.graph_frame, self.play_img, self.step_img, self.save_img, self.attach_img,
-    #         self.run_algorithm, self.step_algorithm, self.save_graph, self.load_adjacency_matrix
-    #     )
+        self.reset_img = tk.PhotoImage(file="./icons/reset.png")
 
     def _create_control_panel(self):
         """Создает панель управления с кнопками операций и информационными метками"""
@@ -126,6 +120,7 @@ class MainApp(tk.Tk):
                                            **Styles.CONTROL_BTN_STYLE)
         end_btn.pack(side=tk.LEFT, padx=5)
         reset_btn = UIManager.create_button(control_frame,
+                                            image=self.reset_img,
                                           command=self.step_algorithm,
                                           **Styles.CONTROL_BTN_STYLE)
         reset_btn.pack(side=tk.LEFT, padx=5)
