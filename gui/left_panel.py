@@ -8,7 +8,6 @@ class LeftPanel(tk.Frame):
         self.pack(side=tk.LEFT, fill=tk.Y)
         self.entries = {}
         self.parameters_changed = False
-
         self._create_parameter_fields()
         self._create_parameter_buttons(open_matrix_callback)
 
@@ -44,10 +43,10 @@ class LeftPanel(tk.Frame):
         return params
 
     def set_default_values(self):
-        for key, entry in self.entries.items():
-            default_value = ParameterConfig.get_default(key)
-            entry.delete(0, tk.END)
-            entry.insert(0, default_value)
+        """Установка значений по умолчанию для всех полей ввода"""
+        for key in self.entries:
+            self.entries[key].delete(0, tk.END)
+            self.entries[key].insert(0, ParameterConfig.get_default(key))
         self.parameters_changed = True
 
     def mark_parameters_changed(self, event=None):

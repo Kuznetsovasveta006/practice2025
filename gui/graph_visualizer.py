@@ -10,7 +10,6 @@ class GraphVisualizer:
         self.graph = None
         self.layout = None
         self.current_clique = None
-
         self._build_graph_area()
 
     def _build_graph_area(self):
@@ -27,17 +26,6 @@ class GraphVisualizer:
                                          command=self.reset_zoom, **Styles.RESET_BTN_STYLE)
         self.reset_graph_btn.place(relx=0.95, rely=0.03, anchor="ne")
 
-    def reset_zoom(self):
-        self.zoom_widget.reset_zoom()
-
-    def save_limits(self):
-        self.zoom_widget.save_original_limits()
-
-    def update_graph(self, graph, layout, clique=None):
-        self.graph = graph
-        self.layout = layout
-        self.current_clique = clique
-        self._draw(highlight_clique=bool(clique))
 
     def _draw(self, highlight_clique=False):
         if self.graph is None:
@@ -77,3 +65,18 @@ class GraphVisualizer:
             if self.current_clique and self.current_clique[node]:
                 self.ax.text(pos[0], pos[1], str(node), ha='center', va='center',
                              color='white', fontweight='bold', fontsize=12)
+
+    def update_graph(self, graph, layout, clique=None):
+        self.graph = graph
+        self.layout = layout
+        self.current_clique = clique
+        self._draw(highlight_clique=bool(clique))
+
+    def reset_zoom(self):
+        self.zoom_widget.reset_zoom()
+
+    def save_limits(self):
+        self.zoom_widget.save_original_limits()
+
+    def reset_zoom(self):
+        self.zoom_widget.reset_zoom()

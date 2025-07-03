@@ -1,11 +1,9 @@
-import tkinter as tk
-from tkinter import messagebox
+
 import tkinter as tk
 from tkinter import messagebox, filedialog
 import numpy as np
 import networkx as nx
 import random
-import networkx as nx
 
 
 # Константы для цветов и стилей

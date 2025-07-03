@@ -45,7 +45,6 @@ class MatrixWindow(tk.Toplevel):
         self._clear_table_frame()
         size = self._get_validated_size()
         if size > 0:
-
             self._initialize_matrix_arrays(size)
             self._configure_grid_layout(size)
             self._create_table_headers(size)
@@ -63,6 +62,11 @@ class MatrixWindow(tk.Toplevel):
         if validated_size != size:
             self.size_var.set(validated_size)
         return validated_size
+
+    def _get_cell_value(self, i, j):
+        """Получение значения ячейки"""
+        btn = self.entries[i][j]
+        return int(btn["text"])
 
     def _initialize_matrix_arrays(self, size):
         """Инициализация массивов для хранения элементов матрицы"""
@@ -108,14 +112,8 @@ class MatrixWindow(tk.Toplevel):
 
     def toggle_cell(self, i, j):
         btn = self.entries[i][j]
-        val = btn["text"]
-        if val == "0":
-            new_val = "1"
-            btn.config(text="1", bg=Colors.MATRIX_BTN_ACTIVE_BG, fg="white")
-        else:
-            new_val = "0"
-            btn.config(text="0", bg="#F4F4F4", fg="black")
-
+        new_val = "1" if btn["text"] == "0" else "0"
+        btn.config(text=new_val, bg=Colors.MATRIX_BTN_ACTIVE_BG if new_val == "1" else "#F4F4F4", fg="white" if new_val == "1" else "black")
         if self.labels[j][i]:
             self.labels[j][i].config(text=new_val)
 
@@ -143,6 +141,13 @@ class MatrixWindow(tk.Toplevel):
         self.create_matrix_table()
         self._update_matrix_display(matrix)
 
+    def create_graph(self):
+        """Создание графа из матрицы"""
+        size = self.size_var.get()
+        matrix = self._get_matrix_for_graph(size)
+        if matrix is not None:
+            self.master.update_graph(matrix)
+
     def _update_matrix_display(self, matrix):
         """Обновление отображения матрицы"""
         size = matrix.shape[0]
@@ -153,13 +158,6 @@ class MatrixWindow(tk.Toplevel):
                 btn.config(text=str(val))
                 if self.labels[j][i]:
                     self.labels[j][i].config(text=str(val))
-
-    def create_graph(self):
-        """Создание графа из матрицы"""
-        size = self.size_var.get()
-        matrix = self._get_matrix_for_graph(size)
-        if matrix is not None:
-            self.master.update_graph(matrix)
 
     def _get_matrix_for_graph(self, size):
         """Получение матрицы для создания графа"""
@@ -184,20 +182,11 @@ class MatrixWindow(tk.Toplevel):
             UIManager.show_error("Input error", "Matrix values must be 0 or 1")
             return None
 
-    def _get_cell_value(self, i, j):
-        """Получение значения ячейки"""
-        btn = self.entries[i][j]
-        return int(btn["text"])
-
     def show_large_matrix(self, matrix):
         """Отображение большой матрицы в текстовом виде"""
         self._clear_table_frame()
         text_content = self._matrix_to_text(matrix)
         self._create_text_widget_with_scrollbars(text_content, matrix.shape[0])
-
-    def _matrix_to_text(self, matrix):
-        """Преобразование матрицы в текстовый формат"""
-        return Formatter.matrix_to_text(matrix)
 
     def _create_text_widget_with_scrollbars(self, text_content, size):
         """Создание текстового виджета с полосами прокрутки"""
@@ -217,3 +206,7 @@ class MatrixWindow(tk.Toplevel):
         xscroll = tk.Scrollbar(self.table_frame, orient='horizontal', command=text_widget.xview)
         xscroll.pack(side=tk.BOTTOM, fill=tk.X)
         text_widget.config(xscrollcommand=xscroll.set)
+
+    def _matrix_to_text(self, matrix):
+        """Преобразование матрицы в текстовый формат"""
+        return Formatter.matrix_to_text(matrix)

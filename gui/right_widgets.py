@@ -26,16 +26,11 @@ class FitnessPlotWidget(tk.Frame):
         self.reset_btn = tk.Button(self, text="Reset", command=self.reset_zoom, **Styles.RESET_BTN_STYLE)
         self.reset_btn.place(relx=0.95, rely=0.02, anchor="ne")
 
-    def reset_zoom(self):
-        self.zoom_widget.reset_zoom()
-
     def draw_empty(self):
         self.draw_fitness()
 
     def draw_fitness(self, generations=[], best=[], avg=[]):
         self.ax.clear()
-        self.fig.clear()
-        self.ax = self.fig.add_subplot(111)
         self.zoom_widget.ax = self.ax
 
         if len(generations) > 0:
@@ -53,12 +48,15 @@ class FitnessPlotWidget(tk.Frame):
         self.zoom_widget.save_original_limits()
         self.canvas.draw()
 
-    def _update_fitness_plot(self, params):
+    def update_fitness_plot(self, params):
         """Обновляет график фитнеса"""
         generations = np.arange(params["max_generations"])
         best = np.random.randint(5, 10, size=params["max_generations"])
         avg = np.random.randint(2, 7, size=params["max_generations"])
         self.draw_fitness(generations, best, avg)
+
+    def reset_zoom(self):
+        self.zoom_widget.reset_zoom()
 
 
 
@@ -106,6 +104,9 @@ class SolutionListWidget(tk.Frame):
         for solution in formatted_solutions:
             self.listbox.insert(tk.END, solution)
 
+        self.highlight_best_solution(best_index)
+
+    def highlight_best_solution(self, best_index):
         # Выделяем лучшее решение
         self.listbox.selection_clear(0, tk.END)
         self.listbox.selection_set(best_index)

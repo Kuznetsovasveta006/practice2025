@@ -1,8 +1,9 @@
 from right_widgets import *
 from matrix_window import *
-import networkx as nx
 from left_panel import LeftPanel
 from graph_visualizer import GraphVisualizer
+import networkx as nx
+
 
 class MainApp(tk.Tk):
     def __init__(self):
@@ -173,118 +174,8 @@ class MainApp(tk.Tk):
 
         return control_frame
 
-    def reset_graph_zoom(self):
-        self.graph_visualizer.reset_zoom()
-
     def open_matrix_window(self):
         MatrixWindow(self)
-
-    def update_graph(self, adj_matrix):
-        self.adj_matrix = adj_matrix
-        self.graph = nx.from_numpy_array(adj_matrix)
-        self.graph_layout = nx.spring_layout(self.graph, seed=42)
-        self.graph_visualizer.update_graph(self.graph, self.graph_layout)
-        self.graph_visualizer.save_limits()
-        self._reset_algorithm_state()
-
-    def _reset_algorithm_state(self):
-        """Сброс состояния алгоритма"""
-        self.graph_visualizer.save_limits()
-        self.best_clique_label.config(text="Max Clique: -")
-        self.solution_list.listbox.delete(0, tk.END)
-        self.current_clique = None
-        self.generation_counter = 0
-        self.generation_label.config(text="Generations: 0")
-
-    def run_algorithm(self):
-        """Основной метод запуска алгоритма"""
-        if not self._validate_graph_exists():
-            return
-
-        if self.left_panel.has_parameters_changed():
-            self._reset_generation_counter()
-            self.left_panel.reset_parameters_changed_flag()
-
-        params = self.left_panel.validate_and_get_parameters()
-        if params is None:
-            return
-
-        print("Параметры алгоритма:", params)
-
-        self.fitness_widget._update_fitness_plot(params)
-
-        best_solution = self.solution_list.generate_and_process_solutions(
-            params["population_size"], len(self.adj_matrix)
-        )
-
-        self.current_clique = best_solution
-        self.draw_graph_with_clique()
-        self._update_ui_after_algorithm()
-
-    def _validate_graph_exists(self):
-        """Проверяет, создан ли граф"""
-        return Validator.validate_graph_exists(self.graph)
-
-    def _reset_generation_counter(self):
-        """Сбрасывает счетчик поколений"""
-        self.generation_counter = 0
-        self.generation_label.config(text="Generations: 0")
-
-
-    def _update_ui_after_algorithm(self):
-        """Обновляет UI после выполнения алгоритма"""
-        clique_size = sum(self.current_clique)
-        self.best_clique_label.config(text=f"Max Clique: {clique_size}")
-        self.generation_counter += 1
-        self.generation_label.config(text=f"Generations: {self.generation_counter}")
-
-    def draw_graph_with_clique(self):
-        if self.graph and self.graph_layout and self.current_clique:
-            self.graph_visualizer.update_graph(self.graph, self.graph_layout, self.current_clique)
-
-    def save_graph(self):
-        """Сохранение графа в файл"""
-        if not self._validate_graph_for_save():
-            return
-
-        filename = self._get_save_filename()
-        if filename:
-            self._save_matrix_to_file(filename)
-
-    def load_adjacency_matrix(self):
-        """Загрузка матрицы смежности из файла"""
-        filename = self._get_open_filename("Выберите файл с матрицей смежности",
-                                         filetypes=[("Text files", "*.txt"), ("All files", "*.*")])
-        if filename:
-            self._load_matrix_from_file(filename)
-
-    def _validate_graph_for_save(self):
-        """Проверка наличия графа для сохранения"""
-        return Validator.validate_graph_for_save(self.adj_matrix)
-
-    def _get_save_filename(self):
-        """Получение имени файла для сохранения"""
-        return FileManager.get_save_filename()
-
-    def _get_open_filename(self, title, filetypes=[("All files", "*.*")]):
-        """Получение имени файла для открытия"""
-        return FileManager.get_open_filename(title, filetypes)
-
-    def _save_matrix_to_file(self, filename):
-        """Сохранение матрицы в файл"""
-        return FileManager.save_matrix_to_file(filename, self.adj_matrix)
-
-    def _load_matrix_from_file(self, filename):
-        """Загрузка матрицы из файла"""
-        matrix, message = FileManager.load_matrix_from_file(filename)
-        if matrix is not None:
-            self.update_graph(matrix)
-            UIManager.show_info("Успех", message)
-        return matrix is not None
-
-    def step_algorithm(self):
-        """Пошаговое выполнение алгоритма (заглушка)"""
-        UIManager.show_info("Step", "Step (заглушка)")
 
     def on_resize(self, event):
         """Обработка изменения размера окна"""
@@ -306,3 +197,112 @@ class MainApp(tk.Tk):
         w = self.winfo_width()
         right_pad = max(10, int(w * 0.03))
         self.left_panel.pack_configure(padx=(0, right_pad))
+
+    def update_graph(self, adj_matrix):
+        self.adj_matrix = adj_matrix
+        self.graph = nx.from_numpy_array(adj_matrix)
+        self.graph_layout = nx.spring_layout(self.graph, seed=42)
+        self.graph_visualizer.update_graph(self.graph, self.graph_layout)
+        self.graph_visualizer.save_limits()
+        self._reset_algorithm_state()
+
+    def draw_graph_with_clique(self):
+        if self.graph and self.graph_layout and self.current_clique:
+            self.graph_visualizer.update_graph(self.graph, self.graph_layout, self.current_clique)
+
+    def _reset_algorithm_state(self):
+        """Сброс состояния алгоритма"""
+        self.graph_visualizer.save_limits()
+        self.best_clique_label.config(text="Max Clique: -")
+        self.solution_list.listbox.delete(0, tk.END)
+        self.current_clique = None
+        self.generation_counter = 0
+        self.generation_label.config(text="Generations: 0")
+
+    def _update_ui_after_algorithm(self):
+        """Обновляет UI после выполнения алгоритма"""
+        clique_size = sum(self.current_clique)
+        self.best_clique_label.config(text=f"Max Clique: {clique_size}")
+        self.generation_counter += 1
+        self.generation_label.config(text=f"Generations: {self.generation_counter}")
+
+    def _reset_generation_counter(self):
+        """Сбрасывает счетчик поколений"""
+        self.generation_counter = 0
+        self.generation_label.config(text="Generations: 0")
+
+    def reset_graph_zoom(self):
+        self.graph_visualizer.reset_zoom()
+
+    def run_algorithm(self):
+        """Основной метод запуска алгоритма"""
+        if not self._validate_graph_exists():
+            return
+
+        if self.left_panel.has_parameters_changed():
+            self._reset_generation_counter()
+            self.left_panel.reset_parameters_changed_flag()
+
+        params = self.left_panel.validate_and_get_parameters()
+        if params is None:
+            return
+
+        print("Параметры алгоритма:", params)
+
+        self.fitness_widget.update_fitness_plot(params)
+
+        best_solution = self.solution_list.generate_and_process_solutions(
+            params["population_size"], len(self.adj_matrix)
+        )
+
+        self.current_clique = best_solution
+        self.draw_graph_with_clique()
+        self._update_ui_after_algorithm()
+
+    def step_algorithm(self):
+        """Пошаговое выполнение алгоритма (заглушка)"""
+        UIManager.show_info("Step", "Step (заглушка)")
+
+    def _validate_graph_exists(self):
+        """Проверяет, создан ли граф"""
+        return Validator.validate_graph_exists(self.graph)
+
+    def _get_open_filename(self, title, filetypes=[("All files", "*.*")]):
+        """Получение имени файла для открытия"""
+        return FileManager.get_open_filename(title, filetypes)
+
+    def _get_save_filename(self):
+        """Получение имени файла для сохранения"""
+        return FileManager.get_save_filename()
+
+    def _validate_graph_for_save(self):
+        """Проверка наличия графа для сохранения"""
+        return Validator.validate_graph_for_save(self.adj_matrix)
+
+    def _load_matrix_from_file(self, filename):
+        """Загрузка матрицы из файла"""
+        matrix, message = FileManager.load_matrix_from_file(filename)
+        if matrix is not None:
+            self.update_graph(matrix)
+            UIManager.show_info("Успех", message)
+        return matrix is not None
+
+    def _save_matrix_to_file(self, filename):
+        """Сохранение матрицы в файл"""
+        return FileManager.save_matrix_to_file(filename, self.adj_matrix)
+
+    def load_adjacency_matrix(self):
+        """Загрузка матрицы смежности из файла"""
+        filename = self._get_open_filename("Выберите файл с матрицей смежности",
+                                           filetypes=[("Text files", "*.txt"), ("All files", "*.*")])
+        if filename:
+            self._load_matrix_from_file(filename)
+
+    def save_graph(self):
+        """Сохранение графа в файл"""
+        if not self._validate_graph_for_save():
+            return
+
+        filename = self._get_save_filename()
+        if filename:
+            self._save_matrix_to_file(filename)
