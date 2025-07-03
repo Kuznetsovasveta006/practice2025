@@ -193,8 +193,18 @@ class MainApp(tk.Tk):
         right_pad = max(10, int(w * 0.03))
         self.left_panel.pack_configure(padx=(0, right_pad))
 
-    def update_graph(self, adj_matrix):
+    def set_adj_matrix(self, adj_matrix):
         self.adj_matrix = adj_matrix
+
+    def get_adj_matrix(self):
+        print(self.ndarray_to_list(self.adj_matrix))
+
+    def ndarray_to_list(self, matrix_ndarray):
+        """Преобразует np.ndarray в двумерный список целых чисел."""
+        return matrix_ndarray.tolist()
+
+    def update_graph(self, adj_matrix):
+        self.get_adj_matrix()
         self.graph = nx.from_numpy_array(adj_matrix)
         self.graph_layout = nx.spring_layout(self.graph, seed=42)
         self.graph_visualizer.update_graph(self.graph, self.graph_layout)

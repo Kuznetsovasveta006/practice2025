@@ -146,6 +146,7 @@ class MatrixWindow(tk.Toplevel):
         size = self.size_var.get()
         matrix = self._get_matrix_for_graph(size)
         if matrix is not None:
+            self.master.set_adj_matrix(matrix)
             self.master.update_graph(matrix)
 
     def _update_matrix_display(self, matrix):
