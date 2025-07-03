@@ -1,4 +1,4 @@
-import random
+﻿import random
 import json
 
 class Graph:
@@ -232,3 +232,42 @@ class Graph:
             chrom[v_to_remove] = 0
 
         return chrom
+    
+
+
+
+    @staticmethod
+    def load_from_file(file_path: str) -> 'Graph':
+        """
+        Загружает граф через json-файл, в котором граф представлен
+        в виде "вершина: список соседей"
+        """
+        try:
+            with open(file_path, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+        except FileNotFoundError:
+            raise FileNotFoundError(f"Parameters file not found: {file_path}")
+
+        # Определяем количество вершин
+        n = len(data)
+        adjacency = [set() for _ in range(n)]
+
+        for v_str, neighbors in data.items():
+            v = int(v_str)
+            if v < 0 or v >= n:
+                raise ValueError(f"Invalid vertex number: {v}. Must be between 0 and {n - 1}")
+            for u in neighbors:
+                if u < 0 or u >= n:
+                    raise ValueError(f"Invalid neighbor number {u} for vertex {v}. Must be between 0 and {n - 1}")
+                if u == v:
+                    raise ValueError(f"Edge from vertex {v} to itself")
+            adjacency[v] = set(neighbors)
+
+        # Проверяем симметричность для всех вершин
+        for u in range(n):
+            for v in adjacency[u]:
+                # Проверяем наличие обратного ребра
+                if u != v and u not in adjacency[v]:
+                    raise ValueError(f"Graph is not undirected. Missing reverse edge: {v} -> {u}")
+
+        return Graph(adjacency)

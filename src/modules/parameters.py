@@ -1,4 +1,4 @@
-class Parameters:
+﻿class Parameters:
     def __init__(
         self,
         population_size: int,           # Размер популяции
@@ -104,3 +104,8 @@ class Parameters:
                 elif key in 'decrease_percent':
                     if not (0 <= value < 100):
                         raise ValueError(f"Parameter '{key}': must be between 0 and 100, got {value}")
+
+
+#if __name__ == '__main__':
+#    par = Parameters.load_parameters_from_json("params.json")
+#    print(par.population_size)

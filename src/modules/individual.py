@@ -1,4 +1,4 @@
-class Individual:
+﻿class Individual:
     def __init__(self, chromosome: list[int]):
         self.chromosome = chromosome    # Бинарный вектор, задающий хромосому
         self.fitness: float = 0         # Размер клики

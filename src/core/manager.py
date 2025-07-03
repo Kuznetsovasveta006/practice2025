@@ -1,4 +1,4 @@
-import random
+﻿import random
 from modules.graph import Graph
 from modules.parameters import Parameters
 from modules.individual import Individual
@@ -95,6 +95,7 @@ class AlgorithmManager:
         )
         self.algorithm = GeneticAlgorithm(self.graph, self.params)
 
+
     def _check_initialization(self) -> None:
         """Проверяет, можно ли инициализировать алгоритм"""
         if self.graph is not None and self.params is not None:
@@ -120,7 +121,7 @@ class AlgorithmManager:
     def _check_ready(self) -> None:
         """Проверяет, готов ли алгоритм к выполнению"""
         if not self.is_initialized:
-            self.initialize_algorithm()
+            self._check_initialization()
         if self.is_completed:
             raise RuntimeError("Algorithm has already finished")
 
@@ -209,3 +210,4 @@ class AlgorithmManager:
         # Запись начального состояния
         self.history.record(self.algorithm.population)
         print("Algorithm reset to initial state")
+        

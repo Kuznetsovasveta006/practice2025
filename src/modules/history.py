@@ -1,5 +1,5 @@
-from population import Population
-from individual import Individual
+﻿from modules.population import Population
+from modules.individual import Individual
 import matplotlib.pyplot as plt
 import json
 
@@ -14,22 +14,6 @@ class History:
         population.update_stats()
         self.best_fitness.append(population.best.fitness)
         self.avg_fitness.append(population.avg_fitness)
-
-
-    def plot_fitness(self) -> plt.Figure:
-        """Строит и возвращает график динамики лучшей и средней приспособленности по поколениям"""
-        generations = list(range(len(self.best_fitness)))
-        fig, ax = plt.subplots()
-
-        ax.plot(generations, self.best_fitness, label='Best Fitness')
-        ax.plot(generations, self.avg_fitness, label='Average Fitness')
-        ax.set_xlabel('Generation')
-        ax.set_ylabel('Fitness')
-        ax.legend()
-        ax.grid(True)
-
-        return fig
-
 
     def save_to_json(self, path: str):
         """Сохраняет историю работы алгоритма в результирующий json-файл"""

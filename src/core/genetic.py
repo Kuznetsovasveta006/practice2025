@@ -1,4 +1,4 @@
-import random
+﻿import random
 from modules.graph import Graph
 from modules.parameters import Parameters
 from modules.individual import Individual
