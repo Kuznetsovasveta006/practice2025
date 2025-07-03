@@ -1,11 +1,9 @@
 import tkinter as tk
-from tkinter import messagebox
-import tkinter as tk
 from tkinter import messagebox, filedialog
 import numpy as np
 import networkx as nx
 import random
-import networkx as nx
+import json
 
 
 # Константы для цветов и стилей
@@ -173,7 +171,7 @@ class FileManager:
 
     @staticmethod
     def get_save_filename(title="Сохранить как...", defaultextension=".txt",
-                          filetypes=[("Text files", "*.txt"), ("All files", "*.*")]):
+                          filetypes=[("All files", "*.*")]):
         """Получение имени файла для сохранения"""
         return filedialog.asksaveasfilename(
             title=title,
@@ -190,39 +188,34 @@ class FileManager:
     def parse_matrix_from_file(filename):
         """Парсинг матрицы из файла"""
         try:
-            with open(filename, 'r') as f:
-                lines = f.readlines()
+            with open(filename, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+        except FileNotFoundError:
+            raise FileNotFoundError(f"Parameters file not found: {filename}")
 
-            # Удаляем пустые строки и лишние пробелы
-            lines = [line.strip() for line in lines if line.strip()]
+        # Проверка структуры
+        if not isinstance(data, list):
+            raise ValueError("JSON must contain list of lists 0/1")
+        n = len(data)
+        for row in data:
+            if not isinstance(row, list) or len(row) != n:
+                raise ValueError("The matrix must be square and consist of lists length n")
+            for val in row:
+                if val not in (0, 1):
+                    raise ValueError(f"Invalid value in matrix: {val}. Only 0 or 1.")
 
-            if not lines:
-                return None, "Файл пустой или содержит только пустые строки"
+        # Валидируем матрицу
+        is_valid, message = Validator.validate_matrix(data)
+        if not is_valid:
+            return None, message
 
-            # Парсим матрицу
-            matrix = []
-            for line in lines:
-                row = [int(x) for x in line.split()]
-                matrix.append(row)
-
-            # Валидируем матрицу
-            is_valid, message = Validator.validate_matrix(matrix)
-            if not is_valid:
-                return None, message
-
-            return matrix, f"Матрица смежности загружена из файла: {filename}\nРазмер графа: {len(matrix)}x{len(matrix)}"
-
-        except ValueError:
-            return None, "Файл содержит некорректные данные. Используйте только числа, разделенные пробелами"
-        except Exception as e:
-            return None, f"Не удалось загрузить файл: {e}"
+        return data, f"Матрица смежности загружена из файла: {filename}\nРазмер графа: {len(data)}x{len(data)}"
 
     @staticmethod
     def save_matrix_to_file(filename, matrix):
         """Сохранение матрицы в файл"""
         try:
             with open(filename, "w") as f:
-
                 f.write(Formatter.matrix_to_text(matrix))
             UIManager.show_info("Сохранено", f"Граф сохранён в файл: {filename}")
             return True
