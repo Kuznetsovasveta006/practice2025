@@ -18,9 +18,11 @@ class MainApp(tk.Tk):
         self._bind_events()
         self.manager = AlgorithmManager()
 
+
     def _initialize_window(self):
         """Инициализация окна приложения"""
         UIManager.initialize_window(self, "Genetic Algorithm Graph GUI", "1100x600")
+
 
     def _initialize_state(self):
         """Инициализация состояния приложения"""
@@ -34,9 +36,11 @@ class MainApp(tk.Tk):
         self.is_parameters_set = False
         self.is_graph_set = False
 
+
     def _bind_events(self):
         """Привязка событий к окну"""
         UIManager.bind_resize_event(self, self.on_resize)
+
 
     def create_widgets(self):
         self._create_main_container()
@@ -46,13 +50,16 @@ class MainApp(tk.Tk):
         self._load_icons()
         self._create_control_panel()
 
+
     def _create_main_container(self):
         self.main_frame = tk.Frame(self)
         self.main_frame.pack(fill=tk.BOTH, expand=True)
 
+
     def _create_left_panel(self):
         self.entries = {}
         self.left_panel = LeftPanel(self.main_frame, self.open_matrix_window)
+
 
     def _create_graph_area(self):
         """Создание центральной области с графом"""
@@ -66,8 +73,10 @@ class MainApp(tk.Tk):
         # Создаем область графа
         self._create_graph_visualization(center_content)
 
+
     def _create_graph_visualization(self, parent):
         self.graph_visualizer = GraphVisualizer(parent, self.reset_graph_zoom)
+
 
     def _create_right_panel(self):
         """Создание правой панели с решениями и графиком фитнеса"""
@@ -93,6 +102,7 @@ class MainApp(tk.Tk):
         self.fitness_widget = FitnessPlotWidget(fitness_frame)
         self.fitness_widget.pack(fill=tk.BOTH, expand=True)
 
+
     def _load_icons(self):
         """Загрузка иконок для кнопок"""
         self.play_img = tk.PhotoImage(file="./gui/icons/play.png")
@@ -100,6 +110,7 @@ class MainApp(tk.Tk):
         self.save_img = tk.PhotoImage(file="./gui/icons/save.png")
         self.attach_img = tk.PhotoImage(file="./gui/icons/attach_file.png")
         self.end_img = tk.PhotoImage(file="./gui/icons/end.png")
+        self.reset_img = tk.PhotoImage(file="./gui/icons/reset.png")
 
     # def _create_control_panel(self):
     #     """Создание панели управления"""
@@ -107,6 +118,7 @@ class MainApp(tk.Tk):
     #         self.graph_frame, self.play_img, self.step_img, self.save_img, self.attach_img,
     #         self.run_algorithm, self.step_algorithm, self.save_graph, self.load_adjacency_matrix
     #     )
+
 
     def _create_control_panel(self):
         """Создает панель управления с кнопками операций и информационными метками"""
@@ -133,7 +145,8 @@ class MainApp(tk.Tk):
                                            **Styles.CONTROL_BTN_STYLE)
         end_btn.pack(side=tk.LEFT, padx=5)
         reset_btn = UIManager.create_button(control_frame,
-                                          command=self.step_algorithm,
+                                          image=self.reset_img,
+                                          command=self.reset_algorithm,
                                           **Styles.CONTROL_BTN_STYLE)
         reset_btn.pack(side=tk.LEFT, padx=5)
 
@@ -181,13 +194,16 @@ class MainApp(tk.Tk):
 
         return control_frame
 
+
     def open_matrix_window(self):
         MatrixWindow(self)
+
 
     def on_resize(self, event):
         """Обработка изменения размера окна"""
         self._update_main_frame_padding()
         self._update_left_panel_padding()
+
 
     def _update_main_frame_padding(self):
         """Обновление отступов основного фрейма"""
@@ -199,21 +215,26 @@ class MainApp(tk.Tk):
         bottom = max(10, int(h * 0.08))
         self.main_frame.pack_configure(padx=(left, right), pady=(top, bottom))
 
+
     def _update_left_panel_padding(self):
         """Обновление отступов левой панели"""
         w = self.winfo_width()
         right_pad = max(10, int(w * 0.03))
         self.left_panel.pack_configure(padx=(0, right_pad))
 
+
     def set_adj_matrix(self, adj_matrix):
         self.adj_matrix = adj_matrix
+
 
     def get_adj_matrix(self):
         return self.ndarray_to_list(self.adj_matrix)
 
+
     def ndarray_to_list(self, matrix_ndarray):
         """Преобразует np.ndarray в двумерный список целых чисел."""
         return matrix_ndarray.tolist()
+
 
     def update_graph(self, adj_matrix):
         #self.get_adj_matrix()
@@ -233,9 +254,11 @@ class MainApp(tk.Tk):
         self.graph_visualizer.save_limits()
         self._reset_algorithm_state()
 
+
     def draw_graph_with_clique(self):
         if self.graph and self.graph_layout and self.current_clique:
             self.graph_visualizer.update_graph(self.graph, self.graph_layout, self.current_clique)
+
 
     def _reset_algorithm_state(self):
         """Сброс состояния алгоритма"""
@@ -246,6 +269,7 @@ class MainApp(tk.Tk):
         self.generation_counter = 0
         self.generation_label.config(text="Generations: 0")
 
+
     def _update_ui_after_algorithm(self, n):
         """Обновляет UI после выполнения алгоритма"""
         clique_size = sum(self.current_clique)
@@ -253,13 +277,16 @@ class MainApp(tk.Tk):
         self.generation_counter += n
         self.generation_label.config(text=f"Generations: {self.generation_counter}")
 
+
     def _reset_generation_counter(self):
         """Сбрасывает счетчик поколений"""
         self.generation_counter = 0
         self.generation_label.config(text="Generations: 0")
 
+
     def reset_graph_zoom(self):
         self.graph_visualizer.reset_zoom()
+
 
     def run(self, n):
         """bla bla"""
@@ -324,34 +351,57 @@ class MainApp(tk.Tk):
             self._update_ui_after_algorithm(n)
 
         except Exception as e:
-            UIManager.show_error("Ошибка алгоритма", f"{str(e)}")
+            UIManager.show_error("Error of algorithm", f"{str(e)}")
+
 
     def run_algorithm(self):
         """Основной метод запуска алгоритма"""
         self.run(1)
 
+
     def step_algorithm(self):
         """Алгоритм на 5 шагов вперед"""
         self.run(5)
         
+
     def end_algorithm(self):
         self.run(-1)
+
+
+    def reset_algorithm(self):
+        if self.manager.is_initialized:
+            self.manager.reset_algorithm()
+            
+        self._reset_algorithm_state()
+        self._reset_generation_counter()
+        self.fitness_widget.draw_empty()
+        self.solution_list.listbox.delete(0, tk.END)
+        self.current_clique = None
+    
+        # Обновляем визуализацию графа (убираем выделение клики)
+        if self.graph and self.graph_layout:
+            self.graph_visualizer.update_graph(self.graph, self.graph_layout)
+
 
     def _validate_graph_exists(self):
         """Проверяет, создан ли граф"""
         return Validator.validate_graph_exists(self.graph)
 
+
     def _get_open_filename(self, title, filetypes=[("All files", "*.*")]):
         """Получение имени файла для открытия"""
         return FileManager.get_open_filename(title, filetypes)
+
 
     def _get_save_filename(self):
         """Получение имени файла для сохранения"""
         return FileManager.get_save_filename()
 
+
     def _validate_graph_for_save(self):
         """Проверка наличия графа для сохранения"""
         return Validator.validate_graph_for_save(self.adj_matrix)
+
 
     def _load_matrix_from_file(self, filename):
         """Загрузка матрицы из файла"""
@@ -361,9 +411,11 @@ class MainApp(tk.Tk):
             UIManager.show_info("Успех", message)
         return matrix is not None
 
+
     def _save_matrix_to_file(self, filename):
         """Сохранение матрицы в файл"""
         return FileManager.save_matrix_to_file(filename, self.adj_matrix)
+
 
     def load_adjacency_matrix(self):
         """Загрузка матрицы смежности из файла"""
@@ -371,6 +423,7 @@ class MainApp(tk.Tk):
                                            filetypes=[("Text files", "*.txt"), ("All files", "*.*")])
         if filename:
             self._load_matrix_from_file(filename)
+
 
     def save_graph(self):
         """Сохранение графа в файл"""
