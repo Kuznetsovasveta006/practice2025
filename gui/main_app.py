@@ -1,10 +1,84 @@
 from right_widgets import *
 from zoom import ZoomableWidget
 from matrix_window import *
-import numpy as np
 import networkx as nx
 from left_panel import LeftPanel
 
+
+class GraphVisualizer:
+    def __init__(self, parent, reset_callback):
+        self.parent = parent
+        self.reset_callback = reset_callback
+        self.graph = None
+        self.layout = None
+        self.current_clique = None
+
+        self._build_graph_area()
+
+    def _build_graph_area(self):
+        self.graph_area = tk.Frame(self.parent, bg=Colors.GRAPH_BG)
+        self.graph_area.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+
+        self.fig, self.ax = plt.subplots(figsize=(5, 4))
+        self.canvas = FigureCanvasTkAgg(self.fig, master=self.graph_area)
+        self.canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+
+        self.zoom_widget = ZoomableWidget(self.canvas, self.ax, zoom_type="graph")
+
+        self.reset_graph_btn = tk.Button(self.graph_area, text="Reset",
+                                         command=self.reset_zoom, **Styles.RESET_BTN_STYLE)
+        self.reset_graph_btn.place(relx=0.95, rely=0.03, anchor="ne")
+
+    def reset_zoom(self):
+        self.zoom_widget.reset_zoom()
+
+    def save_limits(self):
+        self.zoom_widget.save_original_limits()
+
+    def update_graph(self, graph, layout, clique=None):
+        self.graph = graph
+        self.layout = layout
+        self.current_clique = clique
+        self._draw(highlight_clique=bool(clique))
+
+    def _draw(self, highlight_clique=False):
+        if self.graph is None:
+            return
+
+        if highlight_clique and self.current_clique:
+            node_colors = self._get_clique_node_colors()
+            edge_colors = self._get_clique_edge_colors()
+        else:
+            node_colors = [Colors.NODE_COLOR] * len(self.graph.nodes)
+            edge_colors = [Colors.EDGE_COLOR] * len(self.graph.edges)
+
+        self.ax.clear()
+        nx.draw(self.graph, ax=self.ax, with_labels=True,
+                node_color=node_colors, edge_color=edge_colors, pos=self.layout)
+
+        if highlight_clique and self.current_clique:
+            self._draw_clique_labels()
+
+        self.canvas.draw()
+
+    def _get_clique_node_colors(self):
+        return [
+            Colors.CLIQUE_NODE_COLOR if self.current_clique and self.current_clique[i] else Colors.NODE_COLOR
+            for i in range(len(self.graph.nodes))
+        ]
+
+    def _get_clique_edge_colors(self):
+        clique_set = {i for i, v in enumerate(self.current_clique) if v}
+        return [
+            Colors.CLIQUE_EDGE_COLOR if u in clique_set and v in clique_set else Colors.EDGE_COLOR
+            for u, v in self.graph.edges
+        ]
+
+    def _draw_clique_labels(self):
+        for i, (node, pos) in enumerate(self.layout.items()):
+            if self.current_clique and self.current_clique[node]:
+                self.ax.text(pos[0], pos[1], str(node), ha='center', va='center',
+                             color='white', fontweight='bold', fontsize=12)
 
 class MainApp(tk.Tk):
     def __init__(self):
@@ -61,22 +135,7 @@ class MainApp(tk.Tk):
         self._create_graph_visualization(center_content)
 
     def _create_graph_visualization(self, parent):
-        """Создание области визуализации графа"""
-        graph_area = tk.Frame(parent, bg=Colors.GRAPH_BG)
-        graph_area.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-
-        # Создаем matplotlib фигуру
-        self.fig, self.ax = plt.subplots(figsize=(5, 4))
-        self.canvas = FigureCanvasTkAgg(self.fig, master=graph_area)
-        self.canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
-
-        # Инициализируем зум для графа
-        self.graph_zoom_widget = ZoomableWidget(self.canvas, self.ax, zoom_type="graph")
-
-        # Кнопка reset для графа
-        self.reset_graph_btn = tk.Button(graph_area, text="Reset",
-                                       command=self.reset_graph_zoom, **Styles.RESET_BTN_STYLE)
-        self.reset_graph_btn.place(relx=0.95, rely=0.03, anchor="ne")
+        self.graph_visualizer = GraphVisualizer(parent, self.reset_graph_zoom)
 
     def _create_right_panel(self):
         """Создание правой панели с решениями и графиком фитнеса"""
@@ -141,6 +200,10 @@ class MainApp(tk.Tk):
                                            command=self.step_algorithm,
                                            **Styles.CONTROL_BTN_STYLE)
         end_btn.pack(side=tk.LEFT, padx=5)
+        reset_btn = UIManager.create_button(control_frame,
+                                          command=self.step_algorithm,
+                                          **Styles.CONTROL_BTN_STYLE)
+        reset_btn.pack(side=tk.LEFT, padx=5)
 
         # Центральный разделитель
         UIManager.create_label(control_frame, bg=Colors.GRAPH_BG).pack(side=tk.LEFT, expand=True)
@@ -183,75 +246,26 @@ class MainApp(tk.Tk):
                                            **Styles.CONTROL_BTN_STYLE)
         save_btn.pack(side=tk.LEFT, padx=5)
 
+
         return control_frame
 
     def reset_graph_zoom(self):
-        self.graph_zoom_widget.reset_zoom()
+        self.graph_visualizer.reset_zoom()
 
     def open_matrix_window(self):
         MatrixWindow(self)
 
     def update_graph(self, adj_matrix):
-        """Обновление графа с новой матрицей смежности"""
         self.adj_matrix = adj_matrix
         self.graph = nx.from_numpy_array(adj_matrix)
         self.graph_layout = nx.spring_layout(self.graph, seed=42)
-        self._draw_graph()
+        self.graph_visualizer.update_graph(self.graph, self.graph_layout)
+        self.graph_visualizer.save_limits()
         self._reset_algorithm_state()
-
-    def _draw_graph(self, highlight_clique=False):
-        """Отрисовка графа с возможностью выделения клики"""
-        if self.graph is None or self.adj_matrix is None:
-            return
-
-        if highlight_clique and self.current_clique:
-            node_colors = self._get_clique_node_colors()
-            edge_colors = self._get_clique_edge_colors()
-        else:
-            node_colors = [Colors.NODE_COLOR] * len(self.adj_matrix)
-            edge_colors = [Colors.EDGE_COLOR] * len(self.graph.edges())
-
-        self.ax.clear()
-        nx.draw(self.graph, ax=self.ax, with_labels=True, node_color=node_colors, edge_color=edge_colors, pos=self.graph_layout)
-
-        # Перекрашиваем текст для вершин клики в белый
-        if highlight_clique and self.current_clique:
-            self._draw_clique_labels()
-
-        self.canvas.draw()
-
-    def _get_clique_node_colors(self):
-        """Получение цветов узлов с учетом клики"""
-        node_colors = []
-        for i in range(len(self.adj_matrix)):
-            if self.current_clique and self.current_clique[i]:
-                node_colors.append(Colors.CLIQUE_NODE_COLOR)
-            else:
-                node_colors.append(Colors.NODE_COLOR)
-        return node_colors
-
-    def _get_clique_edge_colors(self):
-        """Получение цветов ребер с учетом клики"""
-        edges = list(self.graph.edges())
-        edge_colors = []
-        clique_set = set(i for i, v in enumerate(self.current_clique) if v)
-        for u, v in edges:
-            if u in clique_set and v in clique_set:
-                edge_colors.append(Colors.CLIQUE_EDGE_COLOR)
-            else:
-                edge_colors.append(Colors.EDGE_COLOR)
-        return edge_colors
-
-    def _draw_clique_labels(self):
-        """Отрисовка меток для узлов клики"""
-        for i, (node, pos) in enumerate(self.graph_layout.items()):
-            if self.current_clique and self.current_clique[node]:
-                self.ax.text(pos[0], pos[1], str(node), ha='center', va='center',
-                             color='white', fontweight='bold', fontsize=12)
 
     def _reset_algorithm_state(self):
         """Сброс состояния алгоритма"""
-        self.graph_zoom_widget.save_original_limits()
+        self.graph_visualizer.save_limits()
         self.best_clique_label.config(text="Max Clique: -")
         self.solution_list.listbox.delete(0, tk.END)
         self.current_clique = None
@@ -301,8 +315,8 @@ class MainApp(tk.Tk):
         self.generation_label.config(text=f"Generations: {self.generation_counter}")
 
     def draw_graph_with_clique(self):
-        """Отрисовка графа с выделенной кликой"""
-        self._draw_graph(highlight_clique=True)
+        if self.graph and self.graph_layout and self.current_clique:
+            self.graph_visualizer.update_graph(self.graph, self.graph_layout, self.current_clique)
 
     def save_graph(self):
         """Сохранение графа в файл"""
@@ -312,12 +326,6 @@ class MainApp(tk.Tk):
         filename = self._get_save_filename()
         if filename:
             self._save_matrix_to_file(filename)
-
-    def load_graph(self):
-        """Загрузка графа из файла (заглушка)"""
-        filename = self._get_open_filename("Выберите файл для загрузки")
-        if filename:
-            UIManager.show_info("Файл выбран", f"Выбран файл: {filename}")
 
     def load_adjacency_matrix(self):
         """Загрузка матрицы смежности из файла"""

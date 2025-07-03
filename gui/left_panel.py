@@ -29,11 +29,11 @@ class LeftPanel(tk.Frame):
         buttons_frame.pack(side=tk.BOTTOM, fill=tk.X)
 
         default_btn = tk.Button(buttons_frame, text="Set default",
-                                command=self.set_default_values)
+                                command=self.set_default_values, **Styles.PARAM_BTN_STYLE)
         default_btn.pack(fill=tk.X, padx=5, pady=(0, 2))
 
         matrix_btn = tk.Button(buttons_frame, text="Enter matrix",
-                               command=open_matrix_callback)
+                               command=open_matrix_callback, **Styles.PARAM_BTN_STYLE)
         matrix_btn.pack(fill=tk.X, padx=5)
 
     def validate_and_get_parameters(self):
