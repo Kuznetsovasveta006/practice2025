@@ -104,8 +104,6 @@ class SolutionListWidget(tk.Frame):
         for solution in formatted_solutions:
             self.listbox.insert(tk.END, solution)
 
-        self.highlight_best_solution(best_index)
-
     def highlight_best_solution(self, best_index):
         # Выделяем лучшее решение
         self.listbox.selection_clear(0, tk.END)
@@ -113,16 +111,10 @@ class SolutionListWidget(tk.Frame):
         self.listbox.activate(best_index)
         self.listbox.see(best_index)
 
-    def generate_and_process_solutions(self, population_size, adj_matrix_len):
+    def get_and_process_solutions(self, population):
         """Генерирует и обрабатывает решения"""
-        solutions = RandomGenerator.generate_random_solutions(population_size, adj_matrix_len)
+        solutions = population
 
-        # Выбираем лучшее решение
-        best_solution = max(solutions, key=sum)
-        best_index = solutions.index(best_solution)
+        self.update_solution_list(solutions, 0)
 
-        # Обновляем список решений
-        self.update_solution_list(solutions, best_index)
-
-        return best_solution
 

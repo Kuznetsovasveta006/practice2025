@@ -252,13 +252,9 @@ class MainApp(tk.Tk):
         if params is None:
             return
 
-        print("Параметры алгоритма:", params)
-
         self.fitness_widget.update_fitness_plot(params)
-
-        best_solution = self.solution_list.generate_and_process_solutions(
-            params["population_size"], len(self.adj_matrix)
-        )
+        population = [[0,1], [0,2]]
+        best_solution = self.solution_list.get_and_process_solutions(population)
 
         self.current_clique = best_solution
         self.draw_graph_with_clique()
