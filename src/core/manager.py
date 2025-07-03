@@ -208,6 +208,4 @@ class AlgorithmManager:
         self.is_completed = False
         
         # Запись начального состояния
-        self.history.record(self.algorithm.population)
-        print("Algorithm reset to initial state")
-        
+        self.history.record(self.algorithm.population)   
