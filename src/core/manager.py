@@ -193,4 +193,19 @@ class AlgorithmManager:
             raise
         return fig
 
-    
+    def reset_algorithm(self) -> None:
+        """
+        Сбрасывает алгоритм до начального состояния
+        Сохраняет текущие граф и параметры
+        """
+        if self.graph is None or self.params is None:
+            raise RuntimeError("Cannot reset algorithm: graph or parameters not set")
+            
+        # Пересоздаем алгоритм с текущими параметрами
+        self.algorithm = GeneticAlgorithm(self.graph, self.params)
+        self.history = History()
+        self.is_completed = False
+        
+        # Запись начального состояния
+        self.history.record(self.algorithm.population)
+        print("Algorithm reset to initial state")
