@@ -3,10 +3,6 @@ import json
 
 class Graph:
     def __init__(self, adj_list: list[set[int]]):
-        """
-        Хранит граф до и после преобразования в формате списка множеств
-        А также список для преобразования старых индексов в новые и наоборот
-        """
         self.adj_list: list[set[int]] = adj_list    # Граф до преобразования (список смежности)
         self.n: int = len(adj_list)                 # Количество вершин в графе
         self.transformed_adj: list[set[int]] = []   # Граф с переназначенными вершинами
@@ -27,11 +23,26 @@ class Graph:
         return Graph(adj_list)
 
 
-    @staticmethod
-    def load_from_file(file_path: str) -> 'Graph':
+    def to_adj_matrix(self) -> list[list[int]]:
         """
-        Загружает граф через json-файл, в котором граф представлен
-        в виде "вершина: список соседей"
+        Преобразует текущий граф в матрицу смежности 0–1
+        """
+        n = self.n
+        matrix = [[0 for _ in range(n)] for _ in range(n)]
+
+        # Заполняем единицами
+        for i, neighs in enumerate(self.adj_list):
+            for j in neighs:
+                matrix[i][j] = 1
+
+        return matrix
+
+
+    @staticmethod
+    def load_from_matrix_file(file_path: str) -> 'Graph':
+        """
+        Загружает граф из JSON-файла, в котором он представлен
+        как матрица смежности (список списков 0/1)
         """
         try:
             with open(file_path, 'r', encoding='utf-8') as f:
@@ -39,22 +50,25 @@ class Graph:
         except FileNotFoundError:
             raise FileNotFoundError(f"Parameters file not found: {file_path}")
 
-        # Определяем количество вершин
+        # Проверка структуры
+        if not isinstance(data, list):
+            raise ValueError("JSON must contain list of lists 0/1")
         n = len(data)
+        for row in data:
+            if not isinstance(row, list) or len(row) != n:
+                raise ValueError("The matrix must be square and consist of lists length n")
+            for val in row:
+                if val not in (0, 1):
+                    raise ValueError(f"Invalid value in matrix: {val}. Only 0 or 1.")
+
+        # Построение списка смежности
         adjacency = [set() for _ in range(n)]
+        for i in range(n):
+            for j, val in enumerate(data[i]):
+                if val == 1:
+                    adjacency[i].add(j)
 
-        for v_str, neighbors in data.items():
-            v = int(v_str)
-            if v < 0 or v >= n:
-                raise ValueError(f"Invalid vertex number: {v}. Must be between 0 and {n - 1}")
-            for u in neighbors:
-                if u < 0 or u >= n:
-                    raise ValueError(f"Invalid neighbor number {u} for vertex {v}. Must be between 0 and {n - 1}")
-                if u == v:
-                    raise ValueError(f"Edge from vertex {v} to itself")
-            adjacency[v] = set(neighbors)
-
-        # Проверяем симметричность для всех вершин
+        # Проверка симметричности
         for u in range(n):
             for v in adjacency[u]:
                 # Проверяем наличие обратного ребра
@@ -64,11 +78,23 @@ class Graph:
         return Graph(adjacency)
 
 
+    def save_to_matrix_file(self, file_path: str) -> None:
+        """
+        Сохраняет граф в JSON-файл как матрицу смежности 0/1
+        """
+        # Генерация матрицы
+        matrix = self.to_adj_matrix()
+
+        # Запись в JSON
+        with open(file_path, 'w', encoding='utf-8') as f:
+            json.dump(matrix, f, ensure_ascii=False, indent=4)
+
+
     @staticmethod
     def random_graph(n: int, p: float) -> 'Graph':
         """
         Генерирует случайный список смежности размера n
-        с вероятностью p для каждого ребра i - j.
+        с вероятностью p для каждого ребра i - j и строит по нему граф
         """
         adj = [set() for _ in range(n)]
         for i in range(n):
