@@ -93,7 +93,7 @@ class AlgorithmManager:
             decrease_percent=float(data['decrease_percent']),
             decrease_step=data['decrease_step'],
         )
-
+        self.algorithm = GeneticAlgorithm(self.graph, self.params)
 
     def _check_initialization(self) -> None:
         """Проверяет, можно ли инициализировать алгоритм"""
