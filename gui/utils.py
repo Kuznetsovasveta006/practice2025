@@ -94,6 +94,14 @@ class Formatter:
             formatted_solutions.append(f"{pad}{i}. {s}{pad}")
         return formatted_solutions
 
+    @staticmethod
+    def matrix_to_text(matrix):
+        """Преобразование матрицы в текстовый формат"""
+        lines = []
+        for row in matrix:
+            lines.append(' '.join(map(str, row)))
+        return '\n'.join(lines)
+
 class Validator:
     """Класс для валидации данных"""
 
@@ -101,7 +109,7 @@ class Validator:
     def validate_graph_exists(graph):
         """Проверка существования графа"""
         if graph is None:
-            show_error("Error", "Graph not created!")
+            UIManager.show_error("Error", "Graph not created!")
             return False
         return True
 
@@ -109,7 +117,7 @@ class Validator:
     def validate_graph_for_save(adj_matrix):
         """Проверка наличия графа для сохранения"""
         if adj_matrix is None:
-            show_error("Ошибка", "Нет графа для сохранения!")
+            UIManager.show_error("Ошибка", "Нет графа для сохранения!")
             return False
         return True
 
@@ -153,7 +161,7 @@ class Validator:
                 raise ValueError
             return val
         except Exception:
-            show_error("Input error", "Matrix values must be 0 or 1")
+            UIManager.show_error("Input error", "Matrix values must be 0 or 1")
             return None
 
 
@@ -233,12 +241,12 @@ class FileManager:
         """Сохранение матрицы в файл"""
         try:
             with open(filename, "w") as f:
-                for row in matrix:
-                    f.write(" ".join(map(str, row)) + "\n")
-            show_info("Сохранено", f"Граф сохранён в файл: {filename}")
+
+                f.write(Formatter.matrix_to_text(matrix))
+            UIManager.show_info("Сохранено", f"Граф сохранён в файл: {filename}")
             return True
         except Exception as e:
-            show_error("Ошибка", f"Не удалось сохранить файл: {e}")
+            UIManager.show_error("Ошибка", f"Не удалось сохранить файл: {e}")
             return False
 
     @staticmethod
@@ -248,7 +256,7 @@ class FileManager:
         if matrix is not None:
             return np.array(matrix), message
         else:
-            show_error("Ошибка", message)
+            UIManager.show_error("Ошибка", message)
             return None, message
 
 
@@ -256,6 +264,20 @@ class UIManager:
     """Универсальный менеджер для работы с UI"""
 
     # === Базовые UI элементы ===
+    @staticmethod
+    def show_error(title, message):
+        """Утилита для показа ошибок"""
+        messagebox.showerror(title, message)
+
+    @staticmethod
+    def show_info(title, message):
+        """Утилита для показа информационных сообщений"""
+        messagebox.showinfo(title, message)
+
+    # def create_button(parent, **kwargs):
+    #     """Утилита для создания кнопки с общими стилями"""
+    #     return tk.Button(parent, **kwargs)
+
     @staticmethod
     def create_frame(parent, **kwargs):
         """Создание фрейма"""
@@ -321,7 +343,7 @@ class UIManager:
         return frame
 
     @staticmethod
-    def create_control_frame(parent, label_text, entry_var, button_text, button_command):
+    def create_matrix_control(parent, label_text, entry_var, button_text, button_command):
         """Создание фрейма с меткой, полем ввода и кнопкой"""
         frame = UIManager.create_frame(parent)
         frame.pack(fill=tk.X, pady=(12, 0), padx=12)
@@ -352,8 +374,19 @@ class UIManager:
         header.grid(row=row, column=col, padx=0, pady=0, sticky="nsew")
         return header
 
+    staticmethod
+    def create_parameter_fields(parent, entries_dict, callback=None):
+        """Создание полей параметров"""
+        for i, (label, key) in enumerate(PARAM_FIELDS):
+            UIManager.create_label(parent, text=label).pack(anchor="w", pady=(8 if i == 0 else 2, 0), padx=5)
+            entry = tk.Entry(parent, width=16)
+            entry.pack(fill=tk.X, padx=5, pady=2)
+            if callback:
+                entry.bind('<KeyRelease>', callback)
+            entries_dict[key] = entry
 
-class MatrixGenerator:
+
+class RandomGenerator:
     """Класс для генерации матриц"""
 
     @staticmethod
@@ -367,47 +400,18 @@ class MatrixGenerator:
         return matrix
 
     @staticmethod
-    def matrix_to_text(matrix):
-        """Преобразование матрицы в текстовый формат"""
-        lines = []
-        for row in matrix:
-            lines.append(' '.join(map(str, row)))
-        return '\n'.join(lines)
+    def generate_random_solutions(population_size, matrix_size):
+        """Генерация случайных решений для алгоритма"""
+        solutions = []
+        for _ in range(population_size):
+            k = random.randint(1, matrix_size)  # случайное количество единиц
+            sol = [0] * matrix_size
+            ones_indices = random.sample(range(matrix_size), k)
+            for idx in ones_indices:
+                sol[idx] = 1
+            solutions.append(sol)
+        return solutions
 
-def show_error(title, message):
-    """Утилита для показа ошибок"""
-    messagebox.showerror(title, message)
-
-
-def show_info(title, message):
-    """Утилита для показа информационных сообщений"""
-    messagebox.showinfo(title, message)
-
-
-def create_button(parent, **kwargs):
-    """Утилита для создания кнопки с общими стилями"""
-    return tk.Button(parent, **kwargs)
-
-
-def create_frame(parent, **kwargs):
-    """Утилита для создания фрейма с общими стилями"""
-    return tk.Frame(parent, **kwargs)
-
-
-def create_label(parent, **kwargs):
-    """Утилита для создания метки с общими стилями"""
-    return tk.Label(parent, **kwargs)
-
-
-def create_parameter_fields(parent, entries_dict, callback=None):
-    """Создание полей параметров"""
-    for i, (label, key) in enumerate(PARAM_FIELDS):
-        create_label(parent, text=label).pack(anchor="w", pady=(8 if i == 0 else 2, 0), padx=5)
-        entry = tk.Entry(parent, width=16)
-        entry.pack(fill=tk.X, padx=5, pady=2)
-        if callback:
-            entry.bind('<KeyRelease>', callback)
-        entries_dict[key] = entry
 
 
 def set_default_values(entries_dict):
@@ -418,51 +422,4 @@ def set_default_values(entries_dict):
             entries_dict[key].insert(0, value)
 
 
-def generate_random_solutions(population_size, matrix_size):
-    """Генерация случайных решений для алгоритма"""
-    solutions = []
-    for _ in range(population_size):
-        k = random.randint(1, matrix_size)  # случайное количество единиц
-        sol = [0] * matrix_size
-        ones_indices = random.sample(range(matrix_size), k)
-        for idx in ones_indices:
-            sol[idx] = 1
-        solutions.append(sol)
-    return solutions
 
-
-
-def create_control_panel(parent, play_img, step_img, save_img, attach_img,
-                        play_cmd, step_cmd, save_cmd, load_cmd):
-    """Создание панели управления"""
-    control_frame = create_frame(parent, bg=Colors.GRAPH_BG)
-    control_frame.pack(side=tk.BOTTOM, fill=tk.X, pady=5)
-
-    # Кнопки воспроизведения
-    play_btn = create_button(control_frame, image=play_img, command=play_cmd, **Styles.CONTROL_BTN_STYLE)
-    play_btn.pack(side=tk.LEFT, padx=5)
-    step_btn = create_button(control_frame, image=step_img, command=step_cmd, **Styles.CONTROL_BTN_STYLE)
-    step_btn.pack(side=tk.LEFT, padx=5)
-
-    # Spacer для центрирования
-    create_label(control_frame, bg=Colors.GRAPH_BG).pack(side=tk.LEFT, expand=True)
-
-    # Информационная панель
-    info_frame = create_frame(control_frame, bg=Colors.GRAPH_BG)
-    info_frame.pack(side=tk.LEFT)
-    generation_label = create_label(info_frame, text="Generations: 0", width=18, anchor="center", bg=Colors.GRAPH_BG)
-    generation_label.pack(side=tk.TOP)
-    best_clique_label = create_label(info_frame, text="Max Clique: -", width=18, anchor="center", bg=Colors.GRAPH_BG)
-    best_clique_label.pack(side=tk.TOP)
-
-    create_label(control_frame, bg=Colors.GRAPH_BG).pack(side=tk.LEFT, expand=True)
-
-    # Правые кнопки
-    right_btns = create_frame(control_frame, bg=Colors.GRAPH_BG)
-    right_btns.pack(side=tk.RIGHT)
-    load_btn = create_button(right_btns, text="📎", image=attach_img, command=load_cmd, **Styles.CONTROL_BTN_STYLE)
-    load_btn.pack(side=tk.LEFT, padx=5)
-    save_btn = create_button(right_btns, image=save_img, command=save_cmd, **Styles.CONTROL_BTN_STYLE)
-    save_btn.pack(side=tk.LEFT, padx=5)
-
-    return control_frame, generation_label, best_clique_label

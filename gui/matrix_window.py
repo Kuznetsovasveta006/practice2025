@@ -33,7 +33,7 @@ class MatrixWindow(tk.Toplevel):
 
     def _create_size_frame(self):
         """Создание панели для выбора размера матрицы"""
-        UIManager.create_control_frame(self, "Size:", self.size_var, "Fill", self.create_matrix_table)
+        UIManager.create_matrix_control(self, "Size:", self.size_var, "Fill", self.create_matrix_table)
 
     def _create_table_frame(self):
         """Создание фрейма для таблицы матрицы"""
@@ -142,7 +142,7 @@ class MatrixWindow(tk.Toplevel):
 
     def _generate_random_matrix(self, size):
         """Генерация случайной симметричной матрицы"""
-        return MatrixGenerator.generate_random_matrix(size)
+        return RandomGenerator.generate_random_matrix(size)
 
     def _handle_large_matrix(self, matrix):
         """Обработка большой матрицы"""
@@ -192,7 +192,7 @@ class MatrixWindow(tk.Toplevel):
                     matrix[i][j] = matrix[j][i] = validated_val
             return matrix
         except Exception:
-            show_error("Input error", "Matrix values must be 0 or 1")
+            UIManager.show_error("Input error", "Matrix values must be 0 or 1")
             return None
 
     def _get_cell_value(self, i, j):
@@ -208,7 +208,7 @@ class MatrixWindow(tk.Toplevel):
 
     def _matrix_to_text(self, matrix):
         """Преобразование матрицы в текстовый формат"""
-        return MatrixGenerator.matrix_to_text(matrix)
+        return Formatter.matrix_to_text(matrix)
 
     def _create_text_widget_with_scrollbars(self, text_content, size):
         """Создание текстового виджета с полосами прокрутки"""

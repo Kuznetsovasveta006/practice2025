@@ -37,7 +37,7 @@ class MainApp(tk.Tk):
         self._create_graph_area()
         self._create_right_panel()
         self._load_icons()
-        self._create_control_panel()
+        self.create_control_panel()
 
     def _create_main_container(self):
         """Создание основного контейнера"""
@@ -51,7 +51,7 @@ class MainApp(tk.Tk):
         self.entries = {}
 
         # Создаем поля параметров
-        create_parameter_fields(self.left_panel, self.entries, self.mark_parameters_changed)
+        UIManager.create_parameter_fields(self.left_panel, self.entries, self.mark_parameters_changed)
 
         # Создаем кнопки параметров
         self._create_parameter_buttons()
@@ -130,12 +130,74 @@ class MainApp(tk.Tk):
         self.save_img = tk.PhotoImage(file="./icons/save.png")
         self.attach_img = tk.PhotoImage(file="./icons/attach_file.png")
 
-    def _create_control_panel(self):
-        """Создание панели управления"""
-        _, self.generation_label, self.best_clique_label = create_control_panel(
-            self.graph_frame, self.play_img, self.step_img, self.save_img, self.attach_img,
-            self.run_algorithm, self.step_algorithm, self.save_graph, self.load_adjacency_matrix
-        )
+    # def _create_control_panel(self):
+    #     """Создание панели управления"""
+    #     _, self.generation_label, self.best_clique_label = create_control_panel(
+    #         self.graph_frame, self.play_img, self.step_img, self.save_img, self.attach_img,
+    #         self.run_algorithm, self.step_algorithm, self.save_graph, self.load_adjacency_matrix
+    #     )
+
+    def create_control_panel(self):
+        """Создает панель управления с кнопками операций и информационными метками"""
+        # Создаем основной фрейм для панели управления
+        control_frame = UIManager.create_frame(self.graph_frame, bg=Colors.GRAPH_BG)
+        control_frame.pack(side=tk.BOTTOM, fill=tk.X, pady=5)
+
+        # Левая часть: кнопки управления алгоритмом
+        play_btn = UIManager.create_button(control_frame,
+                                           image=self.play_img,
+                                           command=self.run_algorithm,
+                                           **Styles.CONTROL_BTN_STYLE)
+        play_btn.pack(side=tk.LEFT, padx=5)
+
+        step_btn = UIManager.create_button(control_frame,
+                                           image=self.step_img,
+                                           command=self.step_algorithm,
+                                           **Styles.CONTROL_BTN_STYLE)
+        step_btn.pack(side=tk.LEFT, padx=5)
+
+        # Центральный разделитель
+        UIManager.create_label(control_frame, bg=Colors.GRAPH_BG).pack(side=tk.LEFT, expand=True)
+
+        # Центральная часть: информационные метки
+        info_frame = UIManager.create_frame(control_frame, bg=Colors.GRAPH_BG)
+        info_frame.pack(side=tk.LEFT)
+
+        self.generation_label = UIManager.create_label(info_frame,
+                                                       text="Generations: 0",
+                                                       width=18,
+                                                       anchor="center",
+                                                       bg=Colors.GRAPH_BG)
+        self.generation_label.pack(side=tk.TOP)
+
+        self.best_clique_label = UIManager.create_label(info_frame,
+                                                        text="Max Clique: -",
+                                                        width=18,
+                                                        anchor="center",
+                                                        bg=Colors.GRAPH_BG)
+        self.best_clique_label.pack(side=tk.TOP)
+
+        # Правый разделитель
+        UIManager.create_label(control_frame, bg=Colors.GRAPH_BG).pack(side=tk.LEFT, expand=True)
+
+        # Правая часть: кнопки сохранения/загрузки
+        right_btns = UIManager.create_frame(control_frame, bg=Colors.GRAPH_BG)
+        right_btns.pack(side=tk.RIGHT)
+
+        load_btn = UIManager.create_button(right_btns,
+                                           text="📎",
+                                           image=self.attach_img,
+                                           command=self.load_adjacency_matrix,
+                                           **Styles.CONTROL_BTN_STYLE)
+        load_btn.pack(side=tk.LEFT, padx=5)
+
+        save_btn = UIManager.create_button(right_btns,
+                                           image=self.save_img,
+                                           command=self.save_graph,
+                                           **Styles.CONTROL_BTN_STYLE)
+        save_btn.pack(side=tk.LEFT, padx=5)
+
+        return control_frame
 
     def reset_graph_zoom(self):
         self.graph_zoom_widget.reset_zoom()
@@ -171,6 +233,7 @@ class MainApp(tk.Tk):
             self._draw_clique_labels()
             
         self.canvas.draw()
+
 
     def _get_clique_node_colors(self):
         """Получение цветов узлов с учетом клики"""
@@ -242,7 +305,7 @@ class MainApp(tk.Tk):
         """Валидирует параметры и возвращает их"""
         params, error = Validator.validate_parameters(self.entries)
         if error:
-            show_error("Ошибка", error)
+            UIManager.show_error("Ошибка", error)
             return None
         return params
 
@@ -256,7 +319,7 @@ class MainApp(tk.Tk):
     def _generate_and_process_solutions(self, params):
         """Генерирует и обрабатывает решения"""
         size = len(self.adj_matrix) if self.adj_matrix is not None else 5
-        solutions = generate_random_solutions(params["population_size"], size)
+        solutions = RandomGenerator.generate_random_solutions(params["population_size"], size)
 
         # Выбираем лучшее решение
         best_solution = max(solutions, key=sum)
@@ -304,7 +367,7 @@ class MainApp(tk.Tk):
         """Загрузка графа из файла (заглушка)"""
         filename = self._get_open_filename("Выберите файл для загрузки")
         if filename:
-            show_info("Файл выбран", f"Выбран файл: {filename}")
+            UIManager.show_info("Файл выбран", f"Выбран файл: {filename}")
 
     def load_adjacency_matrix(self):
         """Загрузка матрицы смежности из файла"""
@@ -334,16 +397,16 @@ class MainApp(tk.Tk):
         matrix, message = FileManager.load_matrix_from_file(filename)
         if matrix is not None:
             self.update_graph(matrix)
-            show_info("Успех", message)
+            UIManager.show_info("Успех", message)
         return matrix is not None
 
     def show_population(self):
         """Показать популяцию (заглушка)"""
-        show_info("Population", "Population list (заглушка)")
+        UIManager.show_info("Population", "Population list (заглушка)")
 
     def step_algorithm(self):
         """Пошаговое выполнение алгоритма (заглушка)"""
-        show_info("Step", "Step (заглушка)")
+        UIManager.show_info("Step", "Step (заглушка)")
 
     def on_resize(self, event):
         """Обработка изменения размера окна"""
