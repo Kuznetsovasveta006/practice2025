@@ -9,6 +9,9 @@ class ZoomableWidget:
         self._original_xlim = None
         self._original_ylim = None
 
+        # Сохраняем оригинальные пределы
+        self.save_original_limits()
+
         # Привязываем события зума
         self.canvas.get_tk_widget().bind('<MouseWheel>', self._on_zoom)
         self.canvas.get_tk_widget().bind('<Button-4>', lambda e: self._on_zoom_linux(e, 1))
@@ -49,9 +52,9 @@ class ZoomableWidget:
     def _on_zoom(self, event):
         """Обработка зума колесом мыши"""
         base_scale = 1.2
-        if event.delta > 0:
+        if event.delta > 0:  # Windows
             scale_factor = 1 / base_scale
-        else:
+        else:  # Windows
             scale_factor = base_scale
         self._zoom *= scale_factor
         self._zoom_to_cursor(event, scale_factor)
