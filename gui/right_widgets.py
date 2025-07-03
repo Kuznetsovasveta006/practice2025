@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-from zoom import ZoomableWidget
-from utils import *
+from gui.zoom import ZoomableWidget
+from gui.utils import *
 
 class FitnessPlotWidget(tk.Frame):
     def __init__(self, master=None, **kwargs):
@@ -48,12 +48,17 @@ class FitnessPlotWidget(tk.Frame):
         self.zoom_widget.save_original_limits()
         self.canvas.draw()
 
-    def update_fitness_plot(self, params):
+    def update_fitness_plot(self, best_fitness: list[float], avg_fitness: list[float]):
         """Обновляет график фитнеса"""
-        generations = np.arange(params["max_generations"])
-        best = np.random.randint(5, 10, size=params["max_generations"])
-        avg = np.random.randint(2, 7, size=params["max_generations"])
-        self.draw_fitness(generations, best, avg)
+        best_arr = np.array(best_fitness)
+        avg_arr = np.array(avg_fitness)
+    
+        if best_arr.size > 0:
+            generations = np.arange(best_arr.size)
+        else:
+            generations = np.array([])
+    
+        self.draw_fitness(generations, best_arr, avg_arr)
 
     def reset_zoom(self):
         self.zoom_widget.reset_zoom()
@@ -104,17 +109,11 @@ class SolutionListWidget(tk.Frame):
         for solution in formatted_solutions:
             self.listbox.insert(tk.END, solution)
 
+        self.highlight_best_solution(best_index)
+
     def highlight_best_solution(self, best_index):
         # Выделяем лучшее решение
         self.listbox.selection_clear(0, tk.END)
         self.listbox.selection_set(best_index)
         self.listbox.activate(best_index)
         self.listbox.see(best_index)
-
-    def get_and_process_solutions(self, population):
-        """Генерирует и обрабатывает решения"""
-        solutions = population
-        self.update_solution_list(solutions, 0)
-        return solutions[0]
-
-
