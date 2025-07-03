@@ -141,6 +141,11 @@ class MainApp(tk.Tk):
                                            command=self.step_algorithm,
                                            **Styles.CONTROL_BTN_STYLE)
         end_btn.pack(side=tk.LEFT, padx=5)
+        reset_btn = UIManager.create_button(control_frame,
+                                          command=self.step_algorithm,
+                                          **Styles.CONTROL_BTN_STYLE)
+        reset_btn.pack(side=tk.LEFT, padx=5)
+    
 
         # Центральный разделитель
         UIManager.create_label(control_frame, bg=Colors.GRAPH_BG).pack(side=tk.LEFT, expand=True)
