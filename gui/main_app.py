@@ -205,7 +205,7 @@ class MainApp(tk.Tk):
 
     def update_graph(self, adj_matrix):
         self.get_adj_matrix()
-        self.graph = nx.from_numpy_array(adj_matrix)
+        self.graph = nx.from_numpy_array(self.adj_matrix)
         self.graph_layout = nx.spring_layout(self.graph, seed=42)
         self.graph_visualizer.update_graph(self.graph, self.graph_layout)
         self.graph_visualizer.save_limits()
@@ -226,8 +226,7 @@ class MainApp(tk.Tk):
 
     def _update_ui_after_algorithm(self):
         """Обновляет UI после выполнения алгоритма"""
-        clique_size = sum(self.current_clique)
-        self.best_clique_label.config(text=f"Max Clique: {clique_size}")
+        self.best_clique_label.config(text=f"Max Clique: {1000}")
         self.generation_counter += 1
         self.generation_label.config(text=f"Generations: {self.generation_counter}")
 
@@ -253,7 +252,7 @@ class MainApp(tk.Tk):
             return
 
         self.fitness_widget.update_fitness_plot(params)
-        population = [[0,1], [0,2]]
+        population = RandomGenerator.generate_random_solutions(params["population_size"], len(self.adj_matrix))
         best_solution = self.solution_list.get_and_process_solutions(population)
 
         self.current_clique = best_solution

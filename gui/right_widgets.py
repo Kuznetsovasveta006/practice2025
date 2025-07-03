@@ -114,7 +114,7 @@ class SolutionListWidget(tk.Frame):
     def get_and_process_solutions(self, population):
         """Генерирует и обрабатывает решения"""
         solutions = population
-
         self.update_solution_list(solutions, 0)
+        return solutions[0]
 
 
