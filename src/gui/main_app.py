@@ -225,6 +225,10 @@ class MainApp(tk.Tk):
         self.manager.set_graph(graph_obj)
         self.is_graph_set = True
 
+        # Обновляем параметры на основе размера графа
+        graph_size = len(adj_matrix)
+        ParameterConfig.update_defaults_based_on_graph_size(graph_size)
+        
         self.graph_visualizer.save_limits()
         self._reset_algorithm_state()
 
