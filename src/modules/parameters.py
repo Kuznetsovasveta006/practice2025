@@ -6,9 +6,9 @@ class Parameters:
         stagnation_limit: int,          # Количество итераций в застое
         max_mutation_prob_gene: float,  # Максимальная вероятность мутации 1 гена
         max_mutation_prob_chrom: float, # Максимальная вероятность мутации хромосомы
-        fitness_scaling_percent: float, # Масштабирование приспособленности хромосом при селекции родителей (в процентах)
+        fitness_scaling_percent: int, # Масштабирование приспособленности хромосом при селекции родителей (в процентах)
         max_crossover_points: int,      # Максимальное количество точек разреза
-        decrease_percent: float,        # Процент уменьшения вероятности мутации и точек разреза
+        decrease_percent: int,        # Процент уменьшения вероятности мутации и точек разреза
         decrease_step: int,             # Шаг (количество поколений) уменьшения точек разреза, вероятности мутации гена и хромосомы
     ):
         self.population_size = population_size
@@ -22,7 +22,7 @@ class Parameters:
         self.decrease_step = decrease_step
 
     @classmethod
-    def from_graph(n: int) -> 'Parameters':
+    def from_graph(self, n: int) -> 'Parameters':
         """
         Вычисляет и возвращает параметры по умолчанию для данного графа
         """
@@ -30,18 +30,18 @@ class Parameters:
         pop = max(5, min(30, n // 10))
         # max_generations – 3*n, но не менее 150 и не более 500
         mg = max(150, min(500, 3 * n))
-        # stagnation_limit – mg/10, но не менее 10 и не более 50
+        # stagnation_limit – mg/10, но не менее 20 и не более 50
         st = max(10, min(50, mg // 10))
         # max_mutation_prob_gene – 0.1
         mpg = 0.1
         # max_mutation_prob_chrom – 0.4 если pop<8, иначе 0.3
         mpc = 0.4 if pop < 8 else 0.3
-        # fitness_scaling_percent – 50
-        fsp = 50.0
+        # fitness_scaling_percent – 40
+        fsp = 40
         # max_crossover_points – n/10, но не менее 3
         mcp = max(3, n // 10)
         # decrease_percent – 20
-        dp = 20.0
+        dp = 20
         # decrease_step – 20
         ds = 20
 
@@ -67,9 +67,9 @@ class Parameters:
             'stagnation_limit': int,
             'max_mutation_prob_gene': float,
             'max_mutation_prob_chrom': float,
-            'fitness_scaling_percent': float,
+            'fitness_scaling_percent': int,
             'max_crossover_points': int,
-            'decrease_percent': float,
+            'decrease_percent': int,
             'decrease_step': int
         }
 
@@ -96,11 +96,11 @@ class Parameters:
                     if not (0 < value < mg):
                         raise ValueError(f"Parameter '{key}': must be between 0 and {mg} (max_generations), got {value}")
                 elif key in 'fitness_scaling_percent':
-                    if not (value > 0.0):
-                        raise ValueError(f"Parameter '{key}': must be > 0.0, got {value}")
+                    if not (value > 0):
+                        raise ValueError(f"Parameter '{key}': must be > 0, got {value}")
                 elif key in 'max_crossover_points':
                     if not (0 < value < n):
                         raise ValueError(f"Parameter '{key}': must be between 0 and {n} (number of vertices), got {value}")
                 elif key in 'decrease_percent':
-                    if not (0.0 <= value < 100.0):
-                        raise ValueError(f"Parameter '{key}': must be between 0.0 and 100.0, got {value}")
+                    if not (0 <= value < 100):
+                        raise ValueError(f"Parameter '{key}': must be between 0 and 100, got {value}")
