@@ -174,8 +174,8 @@ class FileManager:
     """Класс для работы с файлами"""
 
     @staticmethod
-    def get_save_filename(title="Сохранить как...", defaultextension=".txt",
-                          filetypes=[("Text files", "*.txt"), ("All files", "*.*")]):
+    def get_save_filename(title="Сохранить как...", defaultextension=".json",
+                          filetypes=[("JSON files", "*.json"), ("All files", "*.*")]):
         """Получение имени файла для сохранения"""
         return filedialog.asksaveasfilename(
             title=title,
@@ -184,7 +184,7 @@ class FileManager:
         )
 
     @staticmethod
-    def get_open_filename(title="Выберите файл", filetypes=[("All files", "*.*")]):
+    def get_open_filename(title="Выберите файл", defaultextension=".json", filetypes=[("JSON files", "*.json"), ("All files", "*.*")]):
         """Получение имени файла для открытия"""
         return filedialog.askopenfilename(title=title, filetypes=filetypes)
 
