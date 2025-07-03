@@ -1,11 +1,12 @@
-﻿from logging import Manager
+import networkx as nx
+from logging import Manager
 from core.manager import AlgorithmManager
 from gui.right_widgets import *
 from gui.matrix_window import *
 from gui.left_panel import LeftPanel
 from gui.graph_visualizer import GraphVisualizer
 from modules.graph import Graph
-import networkx as nx
+from gui.parameter_config import ParameterConfig
 
 
 class MainApp(tk.Tk):
@@ -128,7 +129,7 @@ class MainApp(tk.Tk):
 
         end_btn = UIManager.create_button(control_frame,
                                            image=self.end_img,
-                                           command=self.step_algorithm,
+                                           command=self.end_algorithm,
                                            **Styles.CONTROL_BTN_STYLE)
         end_btn.pack(side=tk.LEFT, padx=5)
         reset_btn = UIManager.create_button(control_frame,
@@ -224,11 +225,11 @@ class MainApp(tk.Tk):
         graph_obj = Graph.from_adj_matrix(adj_matrix)
         self.manager.set_graph(graph_obj)
         self.is_graph_set = True
-
+        
         # Обновляем параметры на основе размера графа
         graph_size = len(adj_matrix)
         ParameterConfig.update_defaults_based_on_graph_size(graph_size)
-        
+
         self.graph_visualizer.save_limits()
         self._reset_algorithm_state()
 
@@ -291,6 +292,9 @@ class MainApp(tk.Tk):
 
             if n == 1:
                 result = self.manager.step()
+            elif n==-1:
+                result = self.manager.run_until_completion()
+                n = self.manager.algorithm.generation - 1
             else:
                 result = self.manager.step_n(n)
                 
@@ -322,7 +326,6 @@ class MainApp(tk.Tk):
         except Exception as e:
             UIManager.show_error("Ошибка алгоритма", f"{str(e)}")
 
-
     def run_algorithm(self):
         """Основной метод запуска алгоритма"""
         self.run(1)
@@ -330,7 +333,9 @@ class MainApp(tk.Tk):
     def step_algorithm(self):
         """Алгоритм на 5 шагов вперед"""
         self.run(5)
-
+        
+    def end_algorithm(self):
+        self.run(-1)
 
     def _validate_graph_exists(self):
         """Проверяет, создан ли граф"""
