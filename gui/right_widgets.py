@@ -6,19 +6,25 @@ from utils import *
 class FitnessPlotWidget(tk.Frame):
     def __init__(self, master=None, **kwargs):
         super().__init__(master, **kwargs)
+        self._create_plot()          # Создание графика
+        self._create_zoom_widget()   # Инициализация зума
+        self._create_reset_button()   # Создание кнопки сброса
+        self.draw_empty()            # Инициализация пустого графика
+
+    def _create_plot(self):
+        """Создание фигуры и оси для графика"""
         self.fig, self.ax = plt.subplots(figsize=(4, 5))
         self.canvas = FigureCanvasTkAgg(self.fig, master=self)
         self.canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
 
-        # Инициализируем зум
+    def _create_zoom_widget(self):
+        """Инициализация зума"""
         self.zoom_widget = ZoomableWidget(self.canvas, self.ax, zoom_type="fitness")
 
-        # Кнопка reset для fitness графика
+    def _create_reset_button(self):
+        """Создание кнопки сброса для графика"""
         self.reset_btn = tk.Button(self, text="Reset", command=self.reset_zoom, **Styles.RESET_BTN_STYLE)
         self.reset_btn.place(relx=0.95, rely=0.02, anchor="ne")
-
-        # Инициализируем пустой график
-        self.draw_empty()
 
     def reset_zoom(self):
         self.zoom_widget.reset_zoom()
@@ -47,21 +53,38 @@ class FitnessPlotWidget(tk.Frame):
         self.zoom_widget.save_original_limits()
         self.canvas.draw()
 
+    def _update_fitness_plot(self, params):
+        """Обновляет график фитнеса"""
+        generations = np.arange(params["max_generations"])
+        best = np.random.randint(5, 10, size=params["max_generations"])
+        avg = np.random.randint(2, 7, size=params["max_generations"])
+        self.draw_fitness(generations, best, avg)
+
+
 
 class SolutionListWidget(tk.Frame):
     def __init__(self, master=None, **kwargs):
         super().__init__(master, **kwargs)
+        self._create_listbox_frame()
+        self._create_scrollbars()
+        self._create_listbox()
 
-        listbox_frame = tk.Frame(self)
-        listbox_frame.pack(fill=tk.BOTH, expand=True)
+    def _create_listbox_frame(self):
+        """Создание фрейма для списка"""
+        self.listbox_frame = tk.Frame(self)
+        self.listbox_frame.pack(fill=tk.BOTH, expand=True)
 
-        self.v_scrollbar = tk.Scrollbar(listbox_frame, orient=tk.VERTICAL)
+    def _create_scrollbars(self):
+        """Создание полос прокрутки"""
+        self.v_scrollbar = tk.Scrollbar(self.listbox_frame, orient=tk.VERTICAL)
         self.v_scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
 
-        self.h_scrollbar = tk.Scrollbar(listbox_frame, orient=tk.HORIZONTAL)
+        self.h_scrollbar = tk.Scrollbar(self.listbox_frame, orient=tk.HORIZONTAL)
         self.h_scrollbar.pack(side=tk.BOTTOM, fill=tk.X)
 
-        self.listbox = tk.Listbox(listbox_frame,
+    def _create_listbox(self):
+        """Создание списка"""
+        self.listbox = tk.Listbox(self.listbox_frame,
                                   yscrollcommand=self.v_scrollbar.set,
                                   xscrollcommand=self.h_scrollbar.set)
         self.listbox.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
@@ -75,3 +98,30 @@ class SolutionListWidget(tk.Frame):
         for i in range(1, size + 1):
             s = ''.join(str(random.randint(0, 1)) for _ in range(size))
             self.listbox.insert(tk.END, f"{pad}{i}. {s}{pad}")
+
+    def update_solution_list(self, solutions, best_index):
+        """Обновляет список решений в UI"""
+        self.listbox.delete(0, tk.END)
+        formatted_solutions = Formatter.format_solution_list(solutions, self.winfo_screenwidth())
+        for solution in formatted_solutions:
+            self.listbox.insert(tk.END, solution)
+
+        # Выделяем лучшее решение
+        self.listbox.selection_clear(0, tk.END)
+        self.listbox.selection_set(best_index)
+        self.listbox.activate(best_index)
+        self.listbox.see(best_index)
+
+    def generate_and_process_solutions(self, population_size, adj_matrix_len):
+        """Генерирует и обрабатывает решения"""
+        solutions = RandomGenerator.generate_random_solutions(population_size, adj_matrix_len)
+
+        # Выбираем лучшее решение
+        best_solution = max(solutions, key=sum)
+        best_index = solutions.index(best_solution)
+
+        # Обновляем список решений
+        self.update_solution_list(solutions, best_index)
+
+        return best_solution
+

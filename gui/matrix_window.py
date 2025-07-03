@@ -44,10 +44,12 @@ class MatrixWindow(tk.Toplevel):
         """Создание таблицы матрицы"""
         self._clear_table_frame()
         size = self._get_validated_size()
-        self._initialize_matrix_arrays(size)
-        self._configure_grid_layout(size)
-        self._create_table_headers(size)
-        self._create_matrix_cells(size)
+        if size > 0:
+
+            self._initialize_matrix_arrays(size)
+            self._configure_grid_layout(size)
+            self._create_table_headers(size)
+            self._create_matrix_cells(size)
 
     def _clear_table_frame(self):
         """Очистка фрейма таблицы"""
@@ -73,23 +75,10 @@ class MatrixWindow(tk.Toplevel):
 
     def _create_table_headers(self, size):
         """Создание заголовков таблицы"""
-        self._create_column_headers(size)
-        self._create_row_headers(size)
-        self._create_corner_cell()
-
-    def _create_column_headers(self, size):
-        """Создание заголовков столбцов"""
+        UIManager.create_table_header(self.table_frame, "", 0, 0)
         for j in range(size):
             UIManager.create_table_header(self.table_frame, str(j), 0, j + 1)
-
-    def _create_row_headers(self, size):
-        """Создание заголовков строк"""
-        for i in range(size):
-            UIManager.create_table_header(self.table_frame, str(i), i + 1, 0)
-
-    def _create_corner_cell(self):
-        """Создание пустой ячейки в углу"""
-        UIManager.create_table_header(self.table_frame, "", 0, 0)
+            UIManager.create_table_header(self.table_frame, str(j), j + 1, 0)
 
     def _create_matrix_cells(self, size):
         """Создание ячеек матрицы"""

@@ -3,6 +3,8 @@ from zoom import ZoomableWidget
 from matrix_window import *
 import numpy as np
 import networkx as nx
+from left_panel import LeftPanel
+
 
 class MainApp(tk.Tk):
     def __init__(self):
@@ -31,43 +33,20 @@ class MainApp(tk.Tk):
         UIManager.bind_resize_event(self, self.on_resize)
 
     def create_widgets(self):
-        """Создание всех виджетов интерфейса"""
         self._create_main_container()
         self._create_left_panel()
         self._create_graph_area()
         self._create_right_panel()
         self._load_icons()
-        self.create_control_panel()
+        self._create_control_panel()
 
     def _create_main_container(self):
-        """Создание основного контейнера"""
         self.main_frame = tk.Frame(self)
         self.main_frame.pack(fill=tk.BOTH, expand=True)
 
     def _create_left_panel(self):
-        """Создание левой панели с параметрами"""
-        self.left_panel = tk.Frame(self.main_frame)
-        self.left_panel.pack(side=tk.LEFT, fill=tk.Y)
         self.entries = {}
-
-        # Создаем поля параметров
-        UIManager.create_parameter_fields(self.left_panel, self.entries, self.mark_parameters_changed)
-
-        # Создаем кнопки параметров
-        self._create_parameter_buttons()
-
-    def _create_parameter_buttons(self):
-        """Создание кнопок для параметров"""
-        self.buttons_frame = tk.Frame(self.left_panel)
-        self.buttons_frame.pack(side=tk.BOTTOM, fill=tk.X)
-        
-        self.default_btn = tk.Button(self.buttons_frame, text="Set default", 
-                                   command=self.set_default_values, **Styles.PARAM_BTN_STYLE)
-        self.default_btn.pack(fill=tk.X, padx=5, pady=(0, 2))
-        
-        self.matrix_btn = tk.Button(self.buttons_frame, text="Enter matrix", 
-                                  command=self.open_matrix_window, **Styles.PARAM_BTN_STYLE)
-        self.matrix_btn.pack(fill=tk.X, padx=5)
+        self.left_panel = LeftPanel(self.main_frame, self.open_matrix_window)
 
     def _create_graph_area(self):
         """Создание центральной области с графом"""
@@ -85,24 +64,24 @@ class MainApp(tk.Tk):
         """Создание области визуализации графа"""
         graph_area = tk.Frame(parent, bg=Colors.GRAPH_BG)
         graph_area.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-        
+
         # Создаем matplotlib фигуру
         self.fig, self.ax = plt.subplots(figsize=(5, 4))
         self.canvas = FigureCanvasTkAgg(self.fig, master=graph_area)
         self.canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
-        
+
         # Инициализируем зум для графа
         self.graph_zoom_widget = ZoomableWidget(self.canvas, self.ax, zoom_type="graph")
 
         # Кнопка reset для графа
-        self.reset_graph_btn = tk.Button(graph_area, text="Reset", 
+        self.reset_graph_btn = tk.Button(graph_area, text="Reset",
                                        command=self.reset_graph_zoom, **Styles.RESET_BTN_STYLE)
         self.reset_graph_btn.place(relx=0.95, rely=0.03, anchor="ne")
 
     def _create_right_panel(self):
         """Создание правой панели с решениями и графиком фитнеса"""
         center_content = self.graph_frame.winfo_children()[0]  # Получаем center_content
-        
+
         # Создаем контейнер для правых виджетов
         right_widgets = tk.Frame(center_content, width=320, bg=Colors.GRAPH_BG)
         right_widgets.pack(side=tk.LEFT, fill=tk.Y, padx=5, pady=5)
@@ -137,7 +116,7 @@ class MainApp(tk.Tk):
     #         self.run_algorithm, self.step_algorithm, self.save_graph, self.load_adjacency_matrix
     #     )
 
-    def create_control_panel(self):
+    def _create_control_panel(self):
         """Создает панель управления с кнопками операций и информационными метками"""
         # Создаем основной фрейм для панели управления
         control_frame = UIManager.create_frame(self.graph_frame, bg=Colors.GRAPH_BG)
@@ -217,23 +196,22 @@ class MainApp(tk.Tk):
         """Отрисовка графа с возможностью выделения клики"""
         if self.graph is None or self.adj_matrix is None:
             return
-            
+
         if highlight_clique and self.current_clique:
             node_colors = self._get_clique_node_colors()
             edge_colors = self._get_clique_edge_colors()
         else:
             node_colors = [Colors.NODE_COLOR] * len(self.adj_matrix)
             edge_colors = [Colors.EDGE_COLOR] * len(self.graph.edges())
-                
+
         self.ax.clear()
         nx.draw(self.graph, ax=self.ax, with_labels=True, node_color=node_colors, edge_color=edge_colors, pos=self.graph_layout)
-        
+
         # Перекрашиваем текст для вершин клики в белый
         if highlight_clique and self.current_clique:
             self._draw_clique_labels()
-            
-        self.canvas.draw()
 
+        self.canvas.draw()
 
     def _get_clique_node_colors(self):
         """Получение цветов узлов с учетом клики"""
@@ -278,18 +256,24 @@ class MainApp(tk.Tk):
         if not self._validate_graph_exists():
             return
 
-        if self.parameters_changed:
+        if self.left_panel.has_parameters_changed():
             self._reset_generation_counter()
-            self.parameters_changed = False
+            self.left_panel.reset_parameters_changed_flag()
 
-        params = self._validate_and_get_parameters()
+        params = self.left_panel.validate_and_get_parameters()
         if params is None:
             return
 
         print("Параметры алгоритма:", params)
 
-        self._update_fitness_plot(params)
-        self._generate_and_process_solutions(params)
+        self.fitness_widget._update_fitness_plot(params)
+
+        best_solution = self.solution_list.generate_and_process_solutions(
+            params["population_size"], len(self.adj_matrix)
+        )
+
+        self.current_clique = best_solution
+        self.draw_graph_with_clique()
         self._update_ui_after_algorithm()
 
     def _validate_graph_exists(self):
@@ -301,47 +285,6 @@ class MainApp(tk.Tk):
         self.generation_counter = 0
         self.generation_label.config(text="Generations: 0")
 
-    def _validate_and_get_parameters(self):
-        """Валидирует параметры и возвращает их"""
-        params, error = Validator.validate_parameters(self.entries)
-        if error:
-            UIManager.show_error("Ошибка", error)
-            return None
-        return params
-
-    def _update_fitness_plot(self, params):
-        """Обновляет график фитнеса"""
-        generations = np.arange(params["max_generations"])
-        best = np.random.randint(5, 10, size=params["max_generations"])
-        avg = np.random.randint(2, 7, size=params["max_generations"])
-        self.fitness_widget.draw_fitness(generations, best, avg)
-
-    def _generate_and_process_solutions(self, params):
-        """Генерирует и обрабатывает решения"""
-        size = len(self.adj_matrix) if self.adj_matrix is not None else 5
-        solutions = RandomGenerator.generate_random_solutions(params["population_size"], size)
-
-        # Выбираем лучшее решение
-        best_solution = max(solutions, key=sum)
-        best_index = solutions.index(best_solution)
-        self.current_clique = best_solution
-        self.draw_graph_with_clique()
-
-        # Обновляем список решений
-        self._update_solution_list(solutions, best_index)
-
-    def _update_solution_list(self, solutions, best_index):
-        """Обновляет список решений в UI"""
-        self.solution_list.listbox.delete(0, tk.END)
-        formatted_solutions = Formatter.format_solution_list(solutions, self.solution_list.winfo_screenwidth())
-        for solution in formatted_solutions:
-            self.solution_list.listbox.insert(tk.END, solution)
-
-        # Выделяем лучшее решение
-        self.solution_list.listbox.selection_clear(0, tk.END)
-        self.solution_list.listbox.selection_set(best_index)
-        self.solution_list.listbox.activate(best_index)
-        self.solution_list.listbox.see(best_index)
 
     def _update_ui_after_algorithm(self):
         """Обновляет UI после выполнения алгоритма"""
@@ -358,7 +301,7 @@ class MainApp(tk.Tk):
         """Сохранение графа в файл"""
         if not self._validate_graph_for_save():
             return
-            
+
         filename = self._get_save_filename()
         if filename:
             self._save_matrix_to_file(filename)
@@ -371,7 +314,7 @@ class MainApp(tk.Tk):
 
     def load_adjacency_matrix(self):
         """Загрузка матрицы смежности из файла"""
-        filename = self._get_open_filename("Выберите файл с матрицей смежности", 
+        filename = self._get_open_filename("Выберите файл с матрицей смежности",
                                          filetypes=[("Text files", "*.txt"), ("All files", "*.*")])
         if filename:
             self._load_matrix_from_file(filename)
@@ -400,10 +343,6 @@ class MainApp(tk.Tk):
             UIManager.show_info("Успех", message)
         return matrix is not None
 
-    def show_population(self):
-        """Показать популяцию (заглушка)"""
-        UIManager.show_info("Population", "Population list (заглушка)")
-
     def step_algorithm(self):
         """Пошаговое выполнение алгоритма (заглушка)"""
         UIManager.show_info("Step", "Step (заглушка)")
@@ -412,15 +351,6 @@ class MainApp(tk.Tk):
         """Обработка изменения размера окна"""
         self._update_main_frame_padding()
         self._update_left_panel_padding()
-
-    def set_default_values(self):
-        """Установка значений по умолчанию"""
-        set_default_values(self.entries)
-        self.parameters_changed = True
-
-    def mark_parameters_changed(self, event):
-        """Отметка изменения параметров"""
-        self.parameters_changed = True
 
     def _update_main_frame_padding(self):
         """Обновление отступов основного фрейма"""

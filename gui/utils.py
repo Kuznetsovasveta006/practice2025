@@ -59,30 +59,6 @@ class Styles:
     }
 
 
-# Параметры по умолчанию
-DEFAULT_PARAMS = {
-    "population_size": "50",
-    "max_generations": "100",
-    "mutation_rate": "0.05",
-    "gene_mutation": "0.1",
-    "fitness_scale": "80",
-    "max_cut_points": "3",
-    "decr_m_prob_step": "10",
-    "reduce_cuts_step": "10",
-}
-
-# Список параметров для создания полей ввода
-PARAM_FIELDS = [
-    ("Population size", "population_size"),
-    ("Max generations amount", "max_generations"),
-    ("Mutation rate", "mutation_rate"),
-    ("Gene mutation", "gene_mutation"),
-    ("Fitness scale", "fitness_scale"),
-    ("Max cut points", "max_cut_points"),
-    ("Reduce prob./cuts by", "decr_m_prob_step"),
-    ("Reduction step", "reduce_cuts_step"),
-]
-
 class Formatter:
     @staticmethod
     def format_solution_list(solutions, widget_width):
@@ -101,6 +77,12 @@ class Formatter:
         for row in matrix:
             lines.append(' '.join(map(str, row)))
         return '\n'.join(lines)
+
+class ValidationError(Exception):
+    pass
+
+
+
 
 class Validator:
     """Класс для валидации данных"""
@@ -206,6 +188,7 @@ class FileManager:
         """Получение имени файла для открытия"""
         return filedialog.askopenfilename(title=title, filetypes=filetypes)
 
+    @staticmethod
     def parse_matrix_from_file(filename):
         """Парсинг матрицы из файла"""
         try:
@@ -374,16 +357,6 @@ class UIManager:
         header.grid(row=row, column=col, padx=0, pady=0, sticky="nsew")
         return header
 
-    staticmethod
-    def create_parameter_fields(parent, entries_dict, callback=None):
-        """Создание полей параметров"""
-        for i, (label, key) in enumerate(PARAM_FIELDS):
-            UIManager.create_label(parent, text=label).pack(anchor="w", pady=(8 if i == 0 else 2, 0), padx=5)
-            entry = tk.Entry(parent, width=16)
-            entry.pack(fill=tk.X, padx=5, pady=2)
-            if callback:
-                entry.bind('<KeyRelease>', callback)
-            entries_dict[key] = entry
 
 
 class RandomGenerator:
@@ -412,14 +385,6 @@ class RandomGenerator:
             solutions.append(sol)
         return solutions
 
-
-
-def set_default_values(entries_dict):
-    """Установка значений по умолчанию"""
-    for key, value in DEFAULT_PARAMS.items():
-        if key in entries_dict:
-            entries_dict[key].delete(0, tk.END)
-            entries_dict[key].insert(0, value)
 
 
 
