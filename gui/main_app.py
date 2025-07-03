@@ -108,6 +108,7 @@ class MainApp(tk.Tk):
         self.step_img = tk.PhotoImage(file="./icons/step.png")
         self.save_img = tk.PhotoImage(file="./icons/save.png")
         self.attach_img = tk.PhotoImage(file="./icons/attach_file.png")
+        self.end_img = tk.PhotoImage(file="./icons/end.png")
 
     # def _create_control_panel(self):
     #     """Создание панели управления"""
@@ -134,6 +135,12 @@ class MainApp(tk.Tk):
                                            command=self.step_algorithm,
                                            **Styles.CONTROL_BTN_STYLE)
         step_btn.pack(side=tk.LEFT, padx=5)
+
+        end_btn = UIManager.create_button(control_frame,
+                                           image=self.end_img,
+                                           command=self.step_algorithm,
+                                           **Styles.CONTROL_BTN_STYLE)
+        end_btn.pack(side=tk.LEFT, padx=5)
 
         # Центральный разделитель
         UIManager.create_label(control_frame, bg=Colors.GRAPH_BG).pack(side=tk.LEFT, expand=True)
