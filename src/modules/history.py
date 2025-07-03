@@ -1,6 +1,5 @@
 ﻿from modules.population import Population
 from modules.individual import Individual
-import matplotlib.pyplot as plt
 import json
 
 class History:
