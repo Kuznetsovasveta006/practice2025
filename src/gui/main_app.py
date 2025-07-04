@@ -252,8 +252,7 @@ class MainApp(tk.Tk):
         graph_size = len(adj_matrix)
         ParameterConfig.update_defaults_based_on_graph_size(graph_size)
 
-        self.graph_visualizer.save_limits()
-        self._reset_algorithm_state()
+        self.reset_algorithm()
 
 
     def draw_graph_with_clique(self):
@@ -321,8 +320,9 @@ class MainApp(tk.Tk):
             if n == 1:
                 result = self.manager.step()
             elif n==-1:
+                iters = self.manager.algorithm.generation
                 result = self.manager.run_until_completion()
-                n = self.manager.algorithm.generation - 1
+                n = self.manager.algorithm.generation - iters
             else:
                 result = self.manager.step_n(n)
                 
